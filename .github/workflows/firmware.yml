@@ -1,0 +1,81 @@
+name: firmware
+
+# Builds SILICIUM_UEFI.fd and a flashable boot.img for vivo iQOO Neo 855 (PD1936).
+# Runs on ubuntu-latest (no macOS needed): the UEFI firmware is EDK2/Mu-Silicium and
+# the boot image is assembled by scripts/make-bootimg.py, which encodes the layout
+# this bootloader requires (uncompressed kernel + DTB after the kernel, dtb_size 0).
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'board.toml'
+      - 'dts/**'
+      - 'scripts/**'
+      - '.github/workflows/firmware.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firmware-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  firmware:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: checkout device
+        uses: actions/checkout@v4
+        with:
+          path: device
+
+      - name: checkout UniXNU
+        uses: actions/checkout@v4
+        with:
+          repository: UniXNU/UniXNU
+          path: UniXNU
+
+      - name: checkout uefi-sheng (Mu-Silicium tree)
+        uses: actions/checkout@v4
+        with:
+          repository: UniXNU/uefi-sheng
+          path: uefi-pd1936
+
+      - name: tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang lld llvm device-tree-compiler uuid-dev \
+                                  build-essential python3 nasm iasl
+          for t in clang lld-link llvm-lib llvm-rc llvm-nm llvm-objcopy dtc fdtget fdtput make python3; do
+            command -v "$t" >/dev/null || { echo "missing tool: $t"; exit 1; }
+          done
+          python3 -c "import tomllib" 2>/dev/null || pip3 install tomli
+
+      - name: prepare platform package
+        run: |
+          python3 device/scripts/prepare-pd1936-uefi.py \
+            --uefi uefi-pd1936 --device device --tree UniXNU
+
+      - name: build firmware
+        run: |
+          python3 UniXNU/unixnu build firmware -D device --os 17 --uefi uefi-pd1936
+
+      - name: assemble boot.img
+        run: |
+          python3 device/scripts/make-bootimg.py \
+            --shim-source uefi-pd1936/BootShim/BootShim.S \
+            --fd uefi-pd1936/Build/pd1936Pkg/DEBUG_CLANGPDB/FV/SILICIUM_UEFI.fd \
+            --dtb UniXNU/build/pd1936/pd1936.dtb \
+            --out boot.img
+
+      - name: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: pd1936-firmware
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            boot.img
+            uefi-pd1936/Build/pd1936Pkg/*/FV/SILICIUM_UEFI.fd

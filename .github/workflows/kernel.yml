@@ -1,0 +1,105 @@
+name: kernel
+
+# Builds the XNU kernel + payload for PD1936 on a macOS runner (full Xcode, which the
+# kernel step needs: ld64 / mig / codesign / compression_tool).
+#
+# Artifacts: kernel/kernel.macho, payload/payload.img, boot/boot.img
+#
+# NOTE: board.toml [kernel] archives currently selects only the shared components.
+# The device driver archives (UFS read-only, display, input) are not written yet, so
+# this workflow produces a kernel that reaches DarwinBoot but has no storage driver.
+
+on:
+  workflow_dispatch:
+    inputs:
+      os:
+        description: "OS profile of the images"
+        type: choice
+        options: ["17", "26", "27"]
+        default: "17"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kernel-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  kernel:
+    runs-on: macos-26
+    timeout-minutes: 180
+    steps:
+      - name: checkout device
+        uses: actions/checkout@v4
+        with:
+          path: device
+
+      - name: checkout UniXNU
+        uses: actions/checkout@v4
+        with:
+          repository: UniXNU/UniXNU
+          path: UniXNU
+
+      - name: init UniXNU submodules safely
+        working-directory: UniXNU
+        run: |
+          git submodule sync
+          for sub in $(git config --file .gitmodules --get-regexp path | awk '{print $2}'); do
+            echo "init $sub"
+            git submodule update --init --recursive "$sub" || \
+              git submodule update --init --remote "$sub" || true
+          done
+
+      - name: checkout uefi-sheng
+        uses: actions/checkout@v4
+        with:
+          repository: UniXNU/uefi-sheng
+          path: uefi-pd1936
+
+      - name: tools
+        run: |
+          brew install dtc llvm lld cmake ninja unifdef mtools blacktop/tap/ipsw
+          for t in clang xcodebuild make git ninja cmake unifdef dtc fdtget fdtput \
+                   aea compression_tool mformat mcopy ipsw; do
+            command -v "$t" >/dev/null || { echo "missing tool: $t"; exit 1; }
+          done
+          python3 -c "import tomllib"
+
+      - name: prepare platform package
+        run: |
+          python3 device/scripts/prepare-pd1936-uefi.py \
+            --uefi uefi-pd1936 --device device --tree UniXNU
+
+      - name: build kernel, payload, firmware
+        env:
+          UNIXNU_UNIQUE_CHIP_ID: ${{ secrets.UNIXNU_UNIQUE_CHIP_ID }}
+        run: |
+          python3 UniXNU/unixnu defconfig pd1936_defconfig -D device
+          python3 UniXNU/unixnu fetch -D device
+          python3 UniXNU/unixnu status --json -D device || true
+          python3 UniXNU/unixnu build kernel -D device --os "${{ inputs.os }}"
+          python3 UniXNU/unixnu build payload -D device --os "${{ inputs.os }}"
+          python3 UniXNU/unixnu build firmware -D device --os "${{ inputs.os }}" --uefi uefi-pd1936
+
+      - name: assemble boot.img with the payload ramdisk
+        run: |
+          PAYLOAD=$(ls UniXNU/out/pd1936/*/*/payload/payload.img | head -1)
+          python3 device/scripts/make-bootimg.py \
+            --shim-source uefi-pd1936/BootShim/BootShim.S \
+            --fd uefi-pd1936/Build/pd1936Pkg/DEBUG_CLANGPDB/FV/SILICIUM_UEFI.fd \
+            --dtb UniXNU/build/pd1936/pd1936.dtb \
+            --ramdisk "$PAYLOAD" \
+            --out boot.img
+
+      - name: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: pd1936-kernel-${{ inputs.os }}
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            boot.img
+            UniXNU/out/pd1936/*/*/kernel/kernel.macho
+            UniXNU/out/pd1936/*/*/payload/payload.img
+            UniXNU/out/pd1936/*/*/payload/payload.json

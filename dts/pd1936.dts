@@ -1,0 +1,188 @@
+// SPDX-License-Identifier: BSD-2-Clause-Patent
+// Device tree for vivo iQOO Neo 855 (PD1936 / V1936A, SM8150 v2).
+//
+// Hardware addresses measured on this unit:
+// - stock boot.img appended DTB index 7 (ro.boot.dtb_idx=7, "SM8150 v2 SoC")
+// - xbl.elf embedded QcomPkg memory map (77 entries)
+// - running system: /sys/bus/i2c/devices, /proc/partitions, dumpsys display
+// Structure follows UniXNU-pclm10 (the closest SM8150 phone port).
+
+/dts-v1/;
+
+/include/ "sm8150.dtsi"
+
+/ {
+    model = "vivo iQOO Neo 855 (PD1936)";
+    compatible = "vivo,pd1936", "qcom,sm8150";
+    qcom,msm-id = <0x153 0x20000>;
+
+    // DRAM window measured from /proc/iomem (System RAM):
+    //   0x80000000-0x856fffff, 0x85d00000-0x85dfffff, 0x85f40000-0x85ffffff,
+    //   0x98717000-0x987fffff, 0x99d00000-0x9e3fffff, 0x9f800000-0xa4bfffff,
+    //   0xa8800000-0xbbafffff, 0xc0000000-0xffd05fff, 0x100000000-0x27fffffff
+    // The largest hole-free span is bank 2 (6 GiB above the 32-bit boundary), so
+    // XNU gets that as its single contiguous range. The low bank 1
+    // (0xc0000000-0xffd05fff, ~1 GiB) is described in the firmware memory map
+    // instead, for DMA-friendly allocations during bring-up.
+    memory@100000000 {
+        device_type = "memory";
+        reg = <0x1 0x00000000 0x1 0x80000000>;
+    };
+
+    reserved-memory {
+        #address-cells = <2>;
+        #size-cells = <2>;
+        ranges;
+
+        // Values below are the stock reserved-memory nodes (measured), plus the
+        // firmware windows from the XBL memory map.
+        hyp_mem: hyp-region@85700000 {
+            reg = <0x0 0x85700000 0x0 0x00600000>;
+            no-map;
+        };
+
+        xbl_aop_mem: xbl-aop-region@85e00000 {
+            reg = <0x0 0x85e00000 0x0 0x00140000>;
+            no-map;
+        };
+
+        smem_mem: smem-region@86000000 {
+            reg = <0x0 0x86000000 0x0 0x00200000>;
+            no-map;
+        };
+
+        removed_regions: removed@86200000 {
+            reg = <0x0 0x86200000 0x0 0x05500000>;
+            no-map;
+        };
+
+        pil_mem: pil-region@8b700000 {
+            // camera 0x8b700000, wlan fw 0x8bc00000, npu 0x8bd80000,
+            // adsp 0x8be00000, modem 0x8d800000, video 0x96e00000,
+            // slpi 0x97300000, ipa 0x98700000, spss 0x98800000, cdsp 0x98900000
+            reg = <0x0 0x8b700000 0x0 0x0f200000>;
+            no-map;
+        };
+
+        cont_splash_region: framebuffer@9c000000 {
+            // Display Reserved in the XBL map; GOP scanout for 1080x2340 32bpp
+            // (stride 4320 = 1080*4).
+            reg = <0x0 0x9c000000 0x0 0x02400000>;
+            no-map;
+        };
+
+        qseecom_region: qseecom@9e400000 {
+            reg = <0x0 0x9e400000 0x0 0x01400000>;
+            no-map;
+        };
+
+        fv_region: fv-region@9f800000 {
+            reg = <0x0 0x9f800000 0x0 0x00400000>;
+            no-map;
+        };
+
+        uefi_fd_region: uefi-fd@9fc00000 {
+            // "UEFI FD" in the XBL map: 0x9FC00000 / 0x00300000
+            reg = <0x0 0x9fc00000 0x0 0x00300000>;
+            no-map;
+        };
+
+        sec_heap_region: sec-heap@9ff00000 {
+            // SEC heap, CPU vectors, page tables, stack, runtime data, log buffer
+            reg = <0x0 0x9ff00000 0x0 0x00100000>;
+            no-map;
+        };
+
+        cdsp_sec_regions: cdsp-sec@a4c00000 {
+            reg = <0x0 0xa4c00000 0x0 0x03c00000>;
+            no-map;
+        };
+    };
+
+    soc {
+        // 24-byte 1:1 ranges window covering GCC (0x100000), QUPv3 I2C
+        // (0xc80000), UART2 (0xa90000), USB (0xa600000), UFS (0x1d84000),
+        // GPU (0x2c00000), UFS SMMU (0x15000000) and GICv3 (0x17a00000).
+        // ArmCpu::mapGic() requires this exact 24-byte form.
+        ranges = <0x0 0x00000000 0x0 0x00000000 0x0 0x20000000>;
+
+        framebuffer0: framebuffer@9c000000 {
+            compatible = "simple-framebuffer";
+            reg = <0x0 0x9c000000 0x0 0x02400000>;
+            width = <1080>;
+            height = <2340>;
+            stride = <4320>;
+            format = "a8r8g8b8";
+            // Panel: OLED, /sys/lcm/lcm_id = 0x22, single mode 1080x2340 @ 62 Hz,
+            // P3 + HDR[2,3,4], brightness = DSI DBV (1023) + DC dimming (4095).
+            status = "okay";
+        };
+
+        // QUPv3 SE17 I2C. Touch measured at i2c-3, addr 0x5d:
+        //   /sys/bus/i2c/devices/3-005d -> .../soc/c80000.i2c/i2c-3/3-005d
+        //   name = gt9886_V2, modalias = i2c:gt9886_V2, driver = goodix_i2c
+        qupv3_se17_i2c: i2c@c80000 {
+            compatible = "qcom,i2c-geni";
+            reg = <0x0 0x00c80000 0x0 0x4000>;
+            #address-cells = <1>;
+            #size-cells = <0>;
+            clock-frequency = <400000>;
+            status = "okay";
+
+            touchscreen@5d {
+                compatible = "goodix,gt9886_V2";
+                reg = <0x5d>;
+                // Measured from the stock of_node (see hardware-inventory.md):
+                //   irq-gpio   -> TLMM GPIO 122, irq-flags 0x2 (edge falling)
+                //   reset-gpio -> TLMM GPIO 54
+                //   panel-max-x/y = 1080/2340, panel-max-w/p = 512/512
+                // The shared sm8150.dtsi does not declare a TLMM node, so the
+                // GPIO numbers are recorded here as plain values; the provider
+                // reference is added if/when a tlmm node lands in the SoC DTSI.
+                touchscreen,irq-gpio-num = <122>;
+                touchscreen,reset-gpio-num = <54>;
+                touchscreen,irq-flags = <2>;
+                touchscreen,max-x = <1080>;
+                touchscreen,max-y = <2340>;
+                touchscreen,max-w = <512>;
+                touchscreen,max-p = <512>;
+                status = "okay";
+            };
+        };
+
+        // Console UART (ro.boot.uart=uart2)
+        uart2: serial@a90000 {
+            compatible = "qcom,geni-debug-uart";
+            reg = <0x0 0x00a90000 0x0 0x4000>;
+            status = "okay";
+        };
+    };
+};
+
+&ufs {
+    status = "okay";
+};
+
+&ufs_smmu {
+    status = "okay";
+};
+
+&gpu {
+    status = "okay";
+};
+
+&gmu {
+    status = "okay";
+};
+
+&gpu_smmu {
+    status = "okay";
+};
+
+&gpucc {
+    status = "okay";
+};
+
+&gcc {
+    status = "okay";
+};

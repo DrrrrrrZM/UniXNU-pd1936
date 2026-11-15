@@ -1,0 +1,21 @@
+# Build outputs and local inputs, never committed.
+out/
+build/
+logs/
+.cache/
+*.img
+*.dtb
+!dts/vivo-pd1936.dtb
+
+# Local overrides
+local.toml
+unixnu.local.toml
+
+# Editor / OS noise
+.DS_Store
+Thumbs.db
+*.swp
+
+# Python bytecode
+__pycache__/
+*.pyc

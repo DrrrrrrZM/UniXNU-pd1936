@@ -1,0 +1,12 @@
+# Normalise line endings in the repository; scripts and configs must be LF so that
+# they run on the Linux/macOS CI runners.
+* text=auto eol=lf
+*.sh    text eol=lf
+*.py    text eol=lf
+*.toml  text eol=lf
+*.yml   text eol=lf
+*.dts   text eol=lf
+*.dtsi  text eol=lf
+*.md    text eol=lf
+*.dtb   binary
+*.img   binary

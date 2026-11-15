@@ -1,0 +1,8 @@
+# Copy to local.toml (ignored by git) and edit. Machine-specific paths only.
+# The platform seed is NOT stored in any repository: pass it as
+# --unique-chip-id HEX or UNIXNU_UNIQUE_CHIP_ID.
+
+[[source]]
+kind = "soc"
+name = "sm8150"
+local = "../UniXNU-sm8150-common"

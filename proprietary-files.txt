@@ -1,0 +1,15 @@
+# Firmware inputs required by uefi-pd1936, extracted from the stock ROM package.
+# Format: source-path | destination-in-firmware | sha256
+# sha256 computed with: python3 pd1936/tools/hash_rom.py (see tools/)
+abl.elf                       | Platforms/vivo/Pd1936Pkg/Binaries/abl.elf            | REQUIRED_SHA256
+xbl.elf                       | (UEFIReader input, not shipped)                       | REQUIRED_SHA256
+xbl_config.elf                | Platforms/vivo/Pd1936Pkg/Binaries/xbl_config.elf       | REQUIRED_SHA256
+aop.mbn                       | Platforms/vivo/Pd1936Pkg/Binaries/aop.mbn              | REQUIRED_SHA256
+devcfg.mbn                    | Platforms/vivo/Pd1936Pkg/Binaries/devcfg.mbn           | REQUIRED_SHA256
+qupfw.elf                     | Platforms/vivo/Pd1936Pkg/Binaries/qupfw.elf            | REQUIRED_SHA256
+uefi_sec.mbn                  | Platforms/vivo/Pd1936Pkg/Binaries/uefi_sec.mbn         | REQUIRED_SHA256
+# display / touch / fingerprint straps come from the dtbo overlay (idx 5)
+dtbo.img                      | (overlay source for panel + GT9886 straps)             | REQUIRED_SHA256
+# GPU firmware (Adreno 640) lives in vendor; pull a640_*.fw from the vendor image
+# once the vendor partition is unpacked, then list each file here.
+vendor/lib/firmware/a640_*.fw | Platforms/vivo/Pd1936Pkg/Binaries/gpu/                  | REQUIRED_SHA256
