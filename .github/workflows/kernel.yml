@@ -77,8 +77,10 @@ jobs:
           # code that does not exist in xnu-10063.141.1 (bsd_init.c is identical across
           # 141.1 / 121.3 / 101.15). It only adds boot_progress_stage() diagnostics, so
           # drop it from the series instead of re-authoring hunks that upstream owns.
+          # BSD sed (macOS) needs a suffix after -i, so filter with grep instead.
           for f in UniXNU/profiles/os/*/patches/xnu/series; do
-            sed -i '/zzz-boot-progress/d' "$f"
+            grep -v 'zzz-boot-progress' "$f" > "$f.tmp"
+            mv "$f.tmp" "$f"
             echo "  $f: $(wc -l < "$f") patches"
           done
           python3 device/scripts/prepare-pd1936-uefi.py \
