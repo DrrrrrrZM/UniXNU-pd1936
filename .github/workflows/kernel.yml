@@ -89,6 +89,10 @@ jobs:
       - name: build kernel, payload, firmware
         env:
           UNIXNU_UNIQUE_CHIP_ID: ${{ secrets.UNIXNU_UNIQUE_CHIP_ID }}
+          # prepare-xnu-source.py downloads the DriverKit headers through the GitHub
+          # API and reads GITHUB_TOKEN/GH_TOKEN (scripts/prepare-xnu-source.py:19).
+          # Without it the runner's shared egress IP hits "403 rate limit exceeded".
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           python3 UniXNU/unixnu defconfig pd1936_defconfig -D device
           python3 UniXNU/unixnu fetch -D device
