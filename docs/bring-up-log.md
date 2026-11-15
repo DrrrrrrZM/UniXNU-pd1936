@@ -131,4 +131,85 @@ against.
 
 ```sh
 fastboot flash boot <retail boot.img of the same firmware build>
+fastboot flash vbmeta <retail vbmeta.img>          # if vbmeta was ever touched
+fastboot flash misc misc-zero.img                  # always: clears bootonce-bootloader
 ```
+
+## 10. Boot image acceptance — measured, not assumed
+
+Fifteen on-device attempts narrowed this down. The boot loader accepts an image only
+when **all** of the following hold:
+
+| Requirement | Evidence |
+|---|---|
+`ramdisk_size == 0` | every image with a ramdisk fell back to fastboot (see the table below) |
+kernel is an uncompressed ARM64 image with a **legal header** (`text_offset 0x80000`, `flags 0xA`) | with `flags = 0` and `text_offset = FD_BASE` the image still booted while `ramdisk_size = 0`, but no ramdisk variant did |
+device tree appended **after** the kernel with `dtb_size = 0` | a DTB inside the kernel field, or a v2 dtb section, both fell back to fastboot |
+`page 4096`, `hv 2`, `kernel_addr 0x8000`, `tags_addr 0x100` | copied from the retail `boot.img` |
+
+### Variables tested against `ramdisk_size > 0` (all failed)
+
+| Variant | Result |
+|---|---|
+4 KiB zero ramdisk (`PROBE`, Mu layout) | fastboot |
+426 KiB Magisk CPIO ramdisk, `ramdisk_addr 0x1000000` | fastboot |
+1 MiB zero ramdisk, `ramdisk_addr 0x1000000` | fastboot |
+1 MiB zero ramdisk, `ramdisk_addr 0xB9800000` (DRAM-resident) | fastboot |
+1 MiB zero ramdisk, `ramdisk_addr 0` | fastboot |
+426 KiB Magisk CPIO, `ramdisk_addr 0`, our kernel | fastboot |
+75 MiB payload, `ramdisk_addr 0` | fastboot |
+75 MiB payload, DTB inside kernel | fastboot |
+75 MiB payload, AOSP order with `dtb_size` set | fastboot |
+any of the above with a **corrected** ARM64 header | fastboot |
+`ramdisk_size = 0`, DTB after kernel | **UEFI menu on the panel** |
+
+Conclusion: this loader does not consume a ramdisk from the `boot` partition. The retail
+Android boots without one (`ramdisk_size = 0`), so the path is unused by vivo.
+
+### Two further negative results
+
+- **`recovery` is not a usable entry point.** `adb reboot recovery` lands in fastboot even
+  when the partition holds an image that boots from `boot` (`ramdisk_size = 0`, verified on
+  the panel). `misc` stays `bootonce-bootloader`; logfs shows the vbmeta chain partition
+  `recovery` skipped as "unrequested".
+- **`vbmeta` must not be modified.** A vbmeta that differs from retail only in the `flags`
+  field (`0 -> 2`, `AVB_VBMETA_IMAGE_FLAGS_VERIFICATION_DISABLED`) puts the device into an
+  endless reboot: the ABL checks the vbmeta RSA signature, so flipping flags without vivo's
+  key invalidates it. On this board AVB verification failures are **non-fatal** anyway —
+  `logfs` records `avb_slot_verify.c:246: ERROR: boot: Hash of data does not match digest in
+  descriptor.` and then boots the image regardless (`unlocked:yes`).
+
+## 11. Reference port comparison (SM8150)
+
+| Port | Approach | Outcome |
+|---|---|---|
+**guacamole** (OnePlus 7 Pro) | external ios-sweet kernel + ADT; UniXNU only for the boot chain, pinned at `b6ae99c` | iOS 16.7.16 userland reached |
+**K20 Pro / raphael** (Xiaomi, SM8150) | iOS loader in the **`recovery` partition** (64 MiB), iOS in a dedicated **`darwin` partition** (20 GiB, magic `RAPHIOS1` at LBA 786432); switch = Android `/system/bin/reboot recovery` | works on that board; **unusable here** because this ABL does not boot `recovery` |
+**nabu** (Xiaomi Pad 5) | UniXNU core pin `245aca1a`, custom OS profile `ipados-17.7-21H16`, components pinned individually | `launchd exec returns ENOENT` |
+**pclm10** (OPPO Reno Ace) | same SM8150 chain, `fastboot boot` (its ABL supports it) | record: no hardware result yet |
+
+The K20 Pro layout supplies the only precedent for a *storage-backed* payload: a dedicated
+partition with a magic header, read by the loader.
+
+## 12. Next path: `embed_payload`
+
+Because `ramdisk_size` must stay 0 and `recovery` cannot be used, the payload has to travel
+inside the **kernel field**, which is exactly what upstream calls `embed_payload`
+(`docs/devices/erhai.md`: *"embed_payload puts the payload in the kernel field because the
+OnePlus ABL replaces the ramdisk field during fastboot boot"*).
+
+Capacity: `boot` is `0x6000000` (96 MiB); BootShim (192 B) + FD (3 MiB) + payload (75 MiB)
+= ~78 MiB, so it fits with room to spare.
+
+Remaining work:
+
+1. **BootShim**: after copying `FD_SIZE` bytes to `FD_BASE`, also copy the payload
+   (`_Payload + FD_SIZE`, `PAYLOAD_SIZE` bytes) to a fixed `PAYLOAD_BASE`.
+2. **Firmware**: expose that memory range as a FAT volume (`UniXNURamDiskDxe` + `DiskIoDxe`
+   + FAT driver are already in the FDF; the source address becomes fixed instead of the
+   ABL-provided ramdisk pointer).
+3. **Memory map**: reserve the payload window. `0xC0000000` is the best candidate — the
+   retail device tree already calls `0xC0000000 + 0x07800000` the "Kernel" window, and a
+   75 MiB payload fits; `DXE Heap Low` must move out of that range.
+4. **Packing**: `scripts/make-bootimg.py` grows an `--embed-payload` mode
+   (`kernel = shim + FD + payload`, `ramdisk_size = 0`, DTB after the kernel).
