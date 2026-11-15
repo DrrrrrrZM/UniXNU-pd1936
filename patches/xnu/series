@@ -1,3 +1,0 @@
-﻿# PD1936 device XNU patch series (one patch per line, in application order).
-# Empty is valid: the arch / soc / os series already cover the shared changes.
-# Device-specific patches go here once the device drivers are written.
