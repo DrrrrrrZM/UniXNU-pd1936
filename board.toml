@@ -48,12 +48,13 @@ archives = [
   "build-mockfs-fixture.py",
   "build-libpthread-kernel.py",
   "component:AppleKeyStoreState",
-  # Device driver archives are not written yet. Add them back, in this order,
-  # once the corresponding scripts exist in this repository:
+  # Strictly read-only SM8150 UFS probe: strips every write path from ShengUfs and
+  # adapts its SM8550 constants to this board (host 0x1d84000, ICE 0x1d90000,
+  # PHY 0x1d87000, GCC 0x100000 + 0x77000, SMMU stream 0x300). It can enumerate the
+  # LUNs and read blocks, so it is enough to reach the root volume; it cannot write.
+  "build-pd1936-ufs-readonly.py",
+  # Still to write:
   #   "build-pd1936-armcpu.py"        (ArmCpu source transform, see UniXNU-nabu)
-  #   "build-pd1936-ufs-readonly.py"  (UFS read-only port, needed for root/userland)
-  # Without them the kernel still links and reaches DarwinBoot, but has no storage
-  # provider, so it cannot mount the root volume.
 ]
 
 [device_tree]
