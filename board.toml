@@ -29,10 +29,10 @@ defconfig = "pd1936_defconfig"
 config_fragments = [
   "arch:configs/common.config",
   "soc:configs/sm8150.config",
-  # Applied after the SoC fragment so it can turn ADRENO back off: the SM8150
+  # Applied after the SoC fragment so it can turn ADRENO / LEGACY_DISPLAY back off: the SM8150
   # fragment enables it, but this board has no GPU component/archive yet and the
   # link step would fail on a missing $ADRENO_ARCHIVE.
-  "device:configs/pd1936-no-gpu.config",
+  "device:configs/pd1936-minimal.config",
   "os:configs/ipados.config",
 ]
 # Same ordering as the reference port: arch, device, soc, os.
