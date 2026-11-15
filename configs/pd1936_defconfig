@@ -3,7 +3,7 @@ CONFIG_XNU_ARMCPU=y
 CONFIG_XNU_NATIVE_UFS=y
 CONFIG_XNU_NATIVE_CS_HASH_CACHE=y
 CONFIG_XNU_BUILD_ARCHIVES=y
-CONFIG_XNU_NATIVE_LEGACY_DISPLAY=y
+# CONFIG_XNU_NATIVE_LEGACY_DISPLAY is not set   # needs ; no display component selected
 CONFIG_XNU_CRYPTO_BOOTSTRAP="prelinked"
 # PD1936: single-slot, no A/B. Owner chain volumes are filled after the
 # first successful userdata build (see porting.toml / storage area).
