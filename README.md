@@ -3,17 +3,28 @@
 Format 2 device repository for running XNU-based operating systems on the vivo
 iQOO Neo 855 (SM8150 v2, 1080x2340, UFS 3.x, single-slot A-only).
 
-**Status**: the boot chain is proven on hardware up to the UniXNU boot manager.
+**Status**: the boot chain runs on hardware up to the UniXNU boot manager, the XNU kernel
+builds in CI, and storage bring-up is in progress because this board refuses every other
+way of delivering the payload.
 
 | Stage | State |
 |---|---|
-| `fastboot flash boot` of a self-built image | works |
-| BootShim → UEFI FD relocation → SEC/PrePi | works (Silicium banner on the panel) |
-| DXE dispatch, memory map validation | works (31 regions, no overlap) |
+| `fastboot flash boot` of a self-built image | works (3.8 MB image) |
+| BootShim -> UEFI FD relocation -> SEC/PrePi | works (Silicium banner on the panel) |
+| DXE dispatch, memory map validation | works (32 regions, no overlap) |
+| Framebuffer DEBUG console | **works** - the only observability this board has (no UART) |
 | UniXNU boot menu | **displayed on hardware** |
-| Keyboard / button input in the menu | not yet (no input driver for this board) |
-| `kernel.macho` + payload volume | not built yet |
+| `kernel.macho` + `payload.img` | **built by CI** (51.9 MB / 75 MiB) |
+| Payload delivery | **blocked**: `ramdisk_size` must be 0, and the kernel field only tolerates ~3-4 MiB (3.0 boots, 7.3 falls back) |
+| UFS controller (for a payload partition) | **alive and already running** (`HCE=1`, UIC errors 0); needs a BlockIo driver |
+| Menu input (buttons) | frozen: all three keys are SPMI (arbiter v5); observer and TLMM both read 0 |
 | iOS / macOS userland | out of scope for now |
+
+What was ruled out, with on-hardware evidence (`docs/bring-up-log.md`,
+`docs/ufs-bringup.md`): any `ramdisk_size > 0`, the `recovery` partition as an entry point,
+a modified `vbmeta`, DTB inside the kernel field, a gzip kernel, and an illegal ARM64 image
+header. A firmware-only image with `ramdisk_size = 0` is the one shape this ABL accepts.
+
 
 ## What this port establishes
 
