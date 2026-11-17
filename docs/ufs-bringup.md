@@ -263,3 +263,111 @@ hand-off that we never perform.
 Any further progress on payload delivery would need one of: an ABL that performs the normal
 Linux-style hand-off for our image, a secure-world call that succeeds, or a completely
 different transport (USB host), which is likely fenced the same way and has not been tested.
+
+## 9. Vendor binaries: found, but they cannot run outside XBL
+
+A public firmware backup repository holds **this exact device's** UEFI:
+
+```
+Project-Aloha/UEFIFirmwareBackup/iqoo-pd1936/
+  xbl.elf
+  Binaries/APRIORI.inc          the vendor's own dispatch order
+  Binaries/DXE.inc              the vendor's full driver list
+  Binaries/QcomPkg/Drivers/     53 signed drivers (UFSDxe.efi is 118,784 B)
+```
+
+The vendor list answers the "how do the other SM8150 ports read storage" question: it contains
+`QcomPkg/Drivers/UFSDxe/UFSDxe.inf` and **no `XhciDxe` at all** (only `UsbfnDwc3Dxe`, the
+device-mode controller). Those ports are not booting from a USB stick; they reuse Qualcomm's
+signed `UFSDxe.efi`.
+
+So the same was tried here:
+
+| Attempt | Contents | Result |
+|---|---|---|
+1 | `UFSDxe.efi` alone (vendor INF says `[Depex] TRUE`) | loaded, then `ERROR: C90000002:V03000007 IO 0D35CD8E-...` - returns an IO error instead of binding |
+2 | + 17 platform drivers (ChipInfo, Smem, ULog, Npa, CmdDb, Rpmh, CPR, Pdc, DALSYS, Clock, HALIOMMU, HWIO, SPMI, TLMM, ShmBridge, Scm, Tz) placed after `CpuDxe` | `ChipInfoDxe` hangs -> black screen, reset |
+3 | same set reordered to the vendor's own APRIORI (Scm/Tz first) | `ScmDxeLA` hangs -> black screen, reset |
+
+Interpretation: these are XBL userspace binaries. They assume the SMEM layout, the shared-memory
+bridge pool and the TZ channels that XBL itself set up. A BootShim-launched payload has none of
+that, so the very first one (`ScmDxeLA`) faults before it can even log.
+
+### What this closes and what it leaves open
+
+- Closed: "just drop in Qualcomm's UFS driver" - it needs its runtime environment.
+- Still open, in principle, with a different shape: bring up the *minimum* XBL-like runtime those
+  drivers need (SMEM allocation, shm bridge, SCM call plumbing). That is a much larger project
+  than the port itself, and it is not specific to this device.
+- Unchanged: everything measured earlier (DMA fenced, no IOMMU binding, SCM refuses a
+  non-secure caller) still holds for our own driver.
+
+The experiment did produce one durable artefact: `vendor/iqoo-pd1936/` now holds the vendor
+driver set plus the vendor's APRIORI/DXE lists, which is the authoritative reference for driver
+order and dependencies on this board.
+
+## 10. USB host: the controller works, VBUS does not
+
+The dwc3 argument is sound: Android moves adb/MTP traffic through this controller, so its DMA
+into HLOS memory is permitted. Measured on the device with our own driver:
+
+```
+dwc3 GCTL  = 0x0230FFE5  -> PrtCapDir forced to HOST, read back capdir = 1
+XHCI       = CAP 0x01100020 (caplen 0x20, HCIVERSION 0x0110 = XHCI 1.1)
+PORTSC1    = PP=1, PLS=5 (RxDetect)   <- a healthy host port actively looking for a device
+```
+
+`XhciDxe`, `UsbBusDxe` and `UsbMassStorageDxe` all bind (UsbBusDxe requires
+`gEfiUsb2HcProtocolGuid`, which only the XHCI driver produces, so the stack really is live).
+So the host side is fine. What is missing is VBUS: `CCS` stays 0 and a disk's LED stays dark.
+
+### Where VBUS comes from on this board
+
+From the merged device tree:
+
+```
+extcon_usb1: vbus-out-gpio = <&pm8150_gpios 9>   vbus-gpio = <&pm8150_gpios 10>
+usb2_vbus_boost_default: pins = "gpio9"; output-low;     (PM8150 pinctrl@c000)
+smb5 (PM8150B, USID 2): qcom,otg-cl-ua = 1.5 A, regulator "smb5-vbus"
+```
+
+So VBUS is controlled over SPMI (PM8150 GPIO9 enables an external boost, and the SMB5 charger
+can produce OTG VBUS). Both require SPMI writes.
+
+### SPMI from the firmware: read yes, write no
+
+The arbiter is v5 (`core.00 = 0x50000000`). Working out the layout took three attempts: the
+APID map entry holds the PPID at bits[19:8] (not [11:0]), the observation channel is
+`obsrvr + 0x10000*ee + 0x80*apid`, and the command word is
+`(opc << 27) | ((addr & 0xFF) << 4) | byte_count`.
+
+```
+read  PM8150 GPIO9 DIG_OUT_CTL (ppid 200, apid found in the map): works, returned 0x01
+write same register, every APID that maps to ppid 200, write opcodes 0..4:
+      register never changes ("before == after" in all cases)
+```
+
+That is exactly the behaviour Linux guards against:
+
+```c
+if (bus->apid_data[apid].write_ee != pmic_arb->ee) {
+    dev_err(..., "disallowed SPMI write to sid=%u, addr=0x%04X");
+    return -EPERM;
+}
+```
+
+Each APID is owned by one execution environment. Reads are partitioned per EE and ours works;
+writes through an APID owned by the secure world are dropped. So **software VBUS is closed**,
+by the same class of protection that fences UFS DMA.
+
+### What this leaves
+
+| Path | State |
+|---|---|
+dwc3 host mode + XHCI + mass storage stack | **works** (verified: capdir 1, PLS 5, drivers bound) |
+VBUS from software | blocked: SPMI writes are dropped for a non-owner EE |
+USB stick enumeration | untested, needs VBUS from somewhere |
+
+Therefore the only way to complete the USB test is **external power**: a USB-C hub with its own
+supply (or a self-powered drive), which makes the stick independent of the phone's VBUS. If
+`CCS` then goes to 1, the channel is proven and the remaining problem is only power delivery.
