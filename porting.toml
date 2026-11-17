@@ -287,6 +287,15 @@ UEFI DMA VERDICT (2026-11-17, six builds): the controller cannot DMA our descrip
 CONCLUSION: the DMA path was closed at hand-off (storage stays owned by ABL/TZ, HLOS would
 reach it through SCM). Firmware-side UFS is therefore blocked until an SCM interface or a
 known-good precedent exists.
+
+SCM VERDICT (same day, direct smc #0 from the firmware):
+  IS_CALL_AVAIL(QCOM_SCM_SVC_MP=0x0C, QCOM_SCM_MP_RESTORE_SEC_CFG=0x02) returned x0=0, x1=1,
+  i.e. the TZ does implement it. But RESTORE_SEC_CFG was rejected for every device id 1..20
+  with x0=0xFFFFFFFFFFFFFFFE (-2) and S2CR[0x300] never changed, including ids unrelated to
+  storage (1=MDSS, 18=GFX). The refusal is about the caller, not the id: the call is reserved
+  for the secure world. Together with the SMMU quirk (firmware turns S2CR BYPASS writes into
+  FAULT) this closes the firmware-side UFS path: READ(10) itself needs no secure world, but
+  making its DMA legal does, and that is refused.
 """
 
 evidence = ["adb /proc/partitions", "adb /sys/devices/platform/soc/1d84000.ufshc/",
