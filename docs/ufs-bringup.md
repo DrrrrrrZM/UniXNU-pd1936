@@ -96,3 +96,70 @@ Queue one SCSI READ(10) with our own UTRL/UTRD in CPU-writable DRAM:
 5. if DMA is translated by the SMMU and the buffer is not mapped, OCS reports an error and
    `GFSR` grows — in that case patch `S2CR` for stream `0x300` to bypass (window
    `0x15000000`, S2CR array base still to be determined from the SMMU-500 map).
+
+## 6. G1 verdict — the controller's DMA is not usable after hand-off
+
+Six builds narrowed this down; the last one separates the two possible causes cleanly.
+
+### The discriminator that settled it
+
+Ring the door bell with the transfer list **stopped** (`0x60 = 0`), then start it and ring
+again. A stopped list fetches nothing, so a hang there would be a register problem.
+
+```
+UfsRead: A stop list, ring bell while stopped     -> printed
+UfsRead: B bell while stopped survived            -> printed   (register writes are fine)
+UfsRead: C start list and ring again              -> HANG
+```
+
+Conclusion: writing `0x58` is harmless; the hang happens when the controller actually
+**DMA-fetches the UTRD**.
+
+### What was tried before that
+
+| Attempt | Buffer location | Result |
+|---|---|---|
+1 | DXE pool (`0x9ADD7xxx`) | hang at the bell |
+2 | `0x9FFA8000/0x9FFA9000/0x9FFAA000` window | hang at the bell |
+3 | everything inside ABL's UTRL page `0x9FFAE000` | hang at the bell |
+4 | UTRD made inline per UFSHCI 3.0 (QEMU semantics: `utrd = base + slot*32`, offsets in 32-bit words) | hang at the bell |
+5 | SMMU: `S2CR[0x300]` forced to BYPASS (`0x00000001` -> `0x00010001`) | hang at the bell |
+6 | UTRL base moved to ABL's task-list page `0x9FFAF000`, plus `0x5C` list-clear | hang at the bell |
+
+SMMU probe values (window readable at `0x15000000`, `S2CR[n] = 0xC00 + n*4`):
+
+```
+S2CR[0]   = 00000000     type 0 (fault), cbndx 0
+@0x1000   = 000100FF     type 1 (bypass), cbndx 0xFF   <- shows the encoding
+S2CR[300] = 00000001     type 0 (fault), cbndx 1
+@0x1C00   = 00000000
+```
+
+Forcing `S2CR[0x300]` to bypass changed nothing, so either `0x300` is not this controller's
+stream or the block is not behind that SMMU at all.
+
+### Reading of the evidence
+
+- CPU access to the controller registers is complete: reads work, writes take effect
+  (`0x50`/`0x54`/`0x60` read back our values), and ringing a stopped list is safe.
+- No buffer address tried is DMA-reachable: three different regions, page-aligned and
+  unaligned, inline UTRD, plus an SMMU bypass write.
+- The controller was left `HCE=1`, `RUN_STOP=1` by the ABL, i.e. it had DMA working
+  *before* hand-off.
+
+The consistent explanation is that the ABL (or the secure world it hands over to) closed the
+controller's DMA path — a common Qualcomm arrangement where storage stays owned by
+XBL/TZ and HLOS reaches it through SCM calls. That is not something a UEFI driver can undo.
+
+### What would unblock G1
+
+1. An SCM/TZ interface to the storage (not obtainable from the ABL image we have).
+2. Evidence from another `ramdisk_size = 0` board that firmware-side UFS DMA works after
+   hand-off — no such port exists yet in the UniXNU device set.
+3. An ABL variant that leaves the DMA path open (vivo-internal).
+
+Until one of those exists, G1 stays blocked on the firmware side and the payload question
+needs a different answer:
+- shrink the payload below the ~3-4 MiB kernel-field limit (not reachable: `kernel.macho`
+  is 49.5 MB), or
+- keep the whole thing inside a boot ramdisk (this ABL refuses any `ramdisk_size > 0`).
