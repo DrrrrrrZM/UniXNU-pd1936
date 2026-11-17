@@ -1,422 +1,859 @@
 # PD1936 porting record (format 2)
+
 # Every area carries: findings, evidence, completion level.
+
 schema_version = 1
 
+
+
 [identity]
+
 device = "pd1936"
+
 name = "vivo iQOO Neo 855 (V1936A)"
+
 soc = "SM8150"
+
 soc_revision = "v2 (ro.boot.dtb_idx=7 -> SM8150 v2 SoC)"
+
 maintainer = "REQUIRED_MAINTAINER"
+
 repository = "REQUIRED_OWNER/UniXNU-pd1936"
 
+
+
 [references]
+
 # Existing SM8150 ports used as the baseline instead of inventing a SoC port.
+
 config_reference = "Aruvelut-123/UniXNU-raphael"
+
 config_reference_why = """
+
 format 2, soc_source=sm8150, arm64-only profile, 1080x2340 AMOLED, 2 porting
+
 records in the device index. Its feeds.toml pins a shared SM8150 source, so the
+
 SoC support is reused rather than re-created.
+
 """
+
 firmware_reference = "wochgn/UniXNU-guacamole"
+
 firmware_reference_why = """
+
 The only SM8150 port recorded as reaching iOS userland on hardware. It builds
+
 the firmware volume from Project Aloha (SurfaceDuo1Pkg) and packs the boot
+
 image with build-bootimg.py --fd .../SM8150_EFI.fd --dtb <prebuilt dtb>.
+
 """
+
 other_sm8150_ports = [
+
   "sxl47/UniXNU-cepheus",
+
   "c0der88/UniXNU-cepheus",
+
   "didazhiqian/UniXNU-cepheus1",
+
   "YangQi0408/UniXNU-cepheus",
+
   "penYo22/UniXNU-raphael",
+
   "guowenye/UniXNU-raphael",
+
   "andromeda (mu_aloha lineage)",
+
 ]
+
 inherited_findings = """
+
 * SM8150 (Cortex-A76/A55) has no FEAT_PAuth, so arm64e profiles (iPadOS 26/27,
+
   macOS 27) cannot run: only arm64 targets such as ipados-17.7.11 / ipados-18.x.
+
 * Touch generation differs per board: raphael is GT9889, PD1936 is GT9886.
+
 * Network differs: raphael carries WCN3990, PD1936 carries QCA6390.
+
 * Both ports keep kernel/root on the same build ID; never mix Darwin versions.
+
 """
+
+
 
 [bootloader_route]
+
 source = "coolapk @AuroraXL - adding fastboot boot + UEFI bring-up on iQOO Z8 (MT6896)"
+
 applicable = "methodology only"
+
 reasoning = """
+
 That write-up patches MTK LK: payload injected into an executable hole at 0x1880,
+
 five branch patches (fastboot_register, two storage_image_loader call sites, the
+
 dtbo overlay call, the bootconfig call) and a magic slot at LK+0xf3100.
+
 PD1936 is Qualcomm: its bootloader is the EDK2-based ABL, self-reported as
+
 `kernel:uefi`, and the chain PBL->XBL->ABL is signature-verified (secure:yes with
+
 a securebootkeyhash). Patching abl.elf is therefore not an option, and it is not
+
 needed: on Qualcomm the ABL loads the kernel field of the boot image and jumps to
+
 it, which is exactly what BootShim expects.
+
 Transferable items adopted here:
+
   1. kernel = gzip(BootShim + FD), with the FD at its compile-time base
+
      (ours: 0x9FC00000 / 0x300000 from the XBL memory map).
+
   2. A field-constraint table for the boot image (page, kernel_addr, ramdisk_addr
+
      nonzero, DTB offset = page + align(kernel), dtb_size == FDT totalsize,
+
      name prefix) - ours is in tools/mkbootimg_pd1936.py.
+
   3. Verify on the host before flashing. This ABL has no `fastboot boot`, so every
+
      attempt costs a NAND write; the packer therefore round-trips and validates
+
      its own output (self-test PASS).
+
 """
+
+
 
 [verification]
+
 tool = "tools/mkbootimg_pd1936.py"
+
 checks = [
+
   "page alignment and the 96 MiB partition limit",
+
   "ANDROID! magic, header v2, page 4096, header_size 4096",
+
   "ramdisk_size == 0 and ramdisk_addr != 0 rule",
+
   "DTB magic at page + align(kernel_size) and dtb_size == FDT totalsize",
+
   "kernel field decompresses as gzip and splits into BootShim + FD of exact size",
+
   "resolved kernel_addr / tags_addr / dtb_addr printed for review",
+
 ]
+
 status = "packer + verifier implemented and self-tested; waiting for the real BootShim and FD"
+
 blocked_on = "mu_aloha_platforms / Mu-Silicium and UniXNU sources (GitHub unreachable from this host)"
 
+
+
 [platform]
+
 completion = "source-reviewed"
+
 findings = """
+
 Stock DTB idx7 = qcom,sm8150 v2, 8 CPUs (4x A55 + 4x A76), GICv3 @0x17a00000,
+
 timer 19.2 MHz, PSCI smc. /memory carries a zero reg on stock and is patched by
+
 the bootloader, so the handoff window is taken from the XBL memory map instead:
+
 Kernel 0xC0000000+0x07800000, Display Reserved 0x9C000000+0x02400000,
+
 DXE Heap 0x99E00000+0x01C00000, FV Region 0x9F800000, ABOOT FV 0x9FA00000,
+
 UEFI FD 0x9FC00000+0x00300000.
+
 """
+
 evidence = ["extract/pd1936-stock-dts.txt", "extract/xbl-memmap.txt", "hardware-inventory.md"]
 
+
+
 [storage]
+
 completion = "in-progress"
+
 findings = """
+
 ufshc@1d84000: reg 0x1d84000+0x2500, 0x1d90000+0x8000; GIC SPI 265.
+
 ufsphy_mem@1d87000: 0xda8. ICE (qcom,ice) @0x1d90000.
+
 Root geometry measured on device (/proc/partitions):
+
   sda = 62056448 sectors of 4096 (248225792 KiB)
+
   sda19 userdata = 239415244 KiB = 59853811 sectors -> first_lba 2202632,
+
   last_lba 62056442 (5 sectors left for the backup GPT at the tail).
+
   Single slot, no A/B; vendor/product live behind dm-0/dm-1 (dynamic partitions).
+
 Controller capability observed in sysfs (root shell):
+
   /sys/devices/platform/soc/1d84000.ufshc/ exposes host0, health_descriptor,
+
   devfreq, max_bus_bw, clkscale_enable, hibern8_on_idle_*, spm_lvl, rpm_lvl,
+
   latency_hist, ufs_io_stats, ufshpb_lu0, ufstw_lu0.
+
 UFS DEVICE IDENTIFIED: Samsung KLUEG8UHDB-C2D1 (128 GB), scsi rev 0900, 9 LUNs.
+
 CORRECTION: this is a UFS 3.x class part, not UFS 2.1 as the marketing spec
+
 suggests. HPB (ufshpb_lu0) and write-booster (ufstw_lu0) nodes only make sense on
+
 UFS 3.x, and the model string confirms it. Consequences:
+
   * link training target is HS-G4 (UFS 3.0/3.1), not HS-G3
+
   * HPB / write booster descriptors exist and may need explicit disabling when
+
     the XNU side takes over the host, otherwise the link state machine differs
+
   * the ShengUfs "reference firmware leaves HS-G5 Rate A" note is irrelevant here
+
 CORRECTION recorded earlier: the UFS host *base* matches SM8550's slot
+
 (0x1d84000) but host length (0x2500 vs 0x3000), PHY (0x1d87000/0xda8 vs
+
 0x1d80000/0x2000) and clock tables differ. Only ShengUfs's access model
+
 transfers; PHY/clocks/SMMU/link must be SM8150-specific.
 
+
+
 UEFI-SIDE MEASUREMENTS (through the framebuffer DEBUG console, 2026-11):
+
   * the ABL leaves the controller ENABLED and its transfer list RUNNING:
+
       0x34 CONTROLLER_ENABLE = 1
+
       0x60 TRANSFER_REQ_LIST_RUN_STOP = 1
+
       0x30 CONTROLLER_STATUS = 0x0000010F
+
       0x38..0x48 UIC error codes = 0
+
       0x08 UFS_VERSION = 0x00000300  -> UFSHCI 3.0 (offsets from Linux ufshci.h)
+
     so no PHY init, no clock enable and no HCI reset is required.
+
   * UTRL is CPU-readable at 0x9FFAE000 (0x50 BASE_L = 0x9FFAE000, 0x54 BASE_H = 0);
+
     0x70 TASK_REQ_LIST_BASE_L = 0x9FFAF000.
+
   * UTRL[0] points at UTRD 0x05000000, which is NOT CPU-accessible: unmapped it
+
     raises a translation fault (ESR 0x96000006, FAR 0x05000000), and after adding
+
     it to the memory map as normal memory the read hangs. A UTRD in CPU-writable
+
     DRAM is therefore the only option, subject to the SMMU.
+
   * SMMU is active: IDR0=0x00250406 (SMMU-500), IDR1=0, GBPA=0x00005555,
+
     GFSR=0x00000039 (faults recorded). Reading 0x15009800 hangs because the
+
     register window ends at 0x15000FFF; the S2CR slot for stream 0x300 is unknown.
+
   * WHY THIS MATTERS: the boot image cannot carry the payload (ramdisk_size must be
+
     0; kernel field tolerates only ~3-4 MiB), so storage access is the only route.
+
+
+UEFI DMA VERDICT (2026-11-17, six builds): the controller cannot DMA our descriptors.
+  * register access is fine: 0x50/0x54/0x60 accept our writes and read back, and ringing the
+    door bell with the transfer list STOPPED is harmless (markers A and B print).
+  * the hang happens only once the list is started and the bell is rung again (marker C),
+    i.e. when the controller DMA-fetches the UTRD.
+  * tried and all hang at that step: buffers in the DXE pool, in 0x9FFA8000/0x9FFA9000/
+    0x9FFAA000, an inline UTRD inside ABL's UTRL page 0x9FFAE000 using UFSHCI 3.0 semantics
+    (utrd = base + slot*32, offsets in 32-bit words, per QEMU's model), UTRL base at
+    0x9FFAF000 with a 0x5C list-clear, and S2CR[0x300] forced to BYPASS.
+  * SMMU window is readable at 0x15000000, S2CR[n] = 0xC00 + n*4, type at bits 17:16:
+    S2CR[0x300] = 0x00000001 (type 0 = fault); writing 0x00010001 (bypass) changed nothing.
+CONCLUSION: the DMA path was closed at hand-off (storage stays owned by ABL/TZ, HLOS would
+reach it through SCM). Firmware-side UFS is therefore blocked until an SCM interface or a
+known-good precedent exists.
 """
+
 evidence = ["adb /proc/partitions", "adb /sys/devices/platform/soc/1d84000.ufshc/",
+
             "adb /sys/class/scsi_device/*/device/model", "extract/xbl-memmap.txt",
+
             "firmware console: UFSHCI register dump (docs/ufs-bringup.md)",
+
             "firmware console: UTRL/UTMRL words, SMMU IDR0/GBPA/GFSR",
+
             "Synchronous Exception dump at FAR=0x05000000"]
+
 pending = ["queue one SCSI READ(10) from our own UTRL/UTRD in CPU-writable DRAM",
+
            "verdict: OCS==0 (path works) / OCS error + GFSR growth (patch S2CR for stream 0x300 to bypass) / never completes (re-check UFSHCI 3.0 sequencing)",
+
            "read-only BlockIo driver, placed in UniXNU-sm8150-common",
+
            "format cache as FAT16 with EFI/UniXNU/Payloads/(kernel.macho, adt, trustcache)",
+
            "SM8150 PHY init sequence for HS-G4 (only needed if the ABL state is lost)",
+
            "decide how HPB / write-booster are handled when XNU owns the host"]
 
+
+
 [display]
+
 completion = "source-reviewed"
+
 findings = """
+
 cont_splash_region 0x9C000000+0x0240000 (== Display Reserved in XBL map).
+
 adb: VSYNC period 16129032 ns -> 62.0 Hz; pnpId=QCM; wide color built-in,
+
 color management on, current mode SRGB.
+
 PANEL IDENTIFIED as OLED with DC dimming: /sys/lcm/lcm_id reads 0x00000022.
+
 /sys/lcm exposes the vendor's own display controls:
+
   lcm_id, module_id (0x00), materiel_id (1211635 / 0x6f), lcm_fps, colour_gamut,
+
   bl_level, oled_hbm, oled_acl, oled_ore, oled_alpmmode, oled_hlpmmode,
+
   dc_dimming, dimming_speed, hdr10p_bl_remap, sre_enable, panel_reg,
+
   aod_disp_info, aor_test, vivo_esd_check_enable/ps, dsi_bta_debug, error_code
+
 Readings (complete display mode table from dumpsys display):
+
   1080x2340, density 480 (403.411 x 404.326 dpi), SINGLE mode: id=1, fps=62.0
+
   appVsyncOffset 1 ms, presentDeadline 16129032 ns (= 62 Hz period)
+
   supportedColorModes [0, 7, 9] = native / sRGB / DISPLAY_P3
+
   HDR types [2, 3, 4], maxLuminance 420.0, maxAvg 210.16, min 0.323
+
   cutout: top inset 73 px, 429..651 wide (waterdrop notch)
+
   /sys/lcm/lcm_fps active: "refreshrate=62fps, actual=61fps, frametime=16284us"
+
   /sys/lcm/lcm_fps idle:   "refreshrate=30fps, actual=30fps, frametime=32655us"
+
   /sys/lcm/error_code = 0000 (no panel error)
+
 Notes:
+
   * There is exactly one display mode; 62 Hz is the panel rate, 30 Hz is the idle
+
     state. Any XNU refresh policy must request 62 Hz, not 60.
+
   * Panel IC name is not exposed anywhere readable (no DT property, panel_reg EIO,
+
     aod_disp_info empty). It is not required for first bring-up: the UniXNU display
+
     path is GopFramebuffer over the firmware's already-initialised scanout, and
+
     brightness goes through bl_level / dc_dimming. Exact DSI porches would only be
+
     needed if XNU drove the DSI controller itself.
+
 """
+
 evidence = ["adb dumpsys display", "adb /sys/lcm/lcm_fps", "adb /sys/lcm/error_code",
+
             "adb dumpsys SurfaceFlinger"]
+
 pending = ["backlight transport: TWO devices exist -",
+
            "  /sys/class/backlight/backlight        max_brightness 4095",
+
            "  /sys/class/backlight/panel0-backlight max_brightness 1023",
+
            "  which one carries WLED/DSI and which one the DC-dimming path is still open",
+
            "P3/wide-color + HDR declaration for the ADT (MobileGestalt side)",
+
            "only if XNU is to drive DSI: porches and PLL rate"]
+
 notes = """
+
 Runtime DT has NO qcom,mdss-dsi-panel-name: `find /proc/device-tree -name
+
 'qcom,mdss-dsi-panel-name'` returns nothing on the running firmware. Panel
+
 identity therefore lives in the vendor driver's lcm table plus /sys/lcm/lcm_id
+
 (0x22) and materiel_id (1211635). Do not look for it in any DTB.
+
 """
+
+
 
 [input]
+
 completion = "source-reviewed"
+
 findings = """
+
 Touch controller: Goodix GT9886 (V2), I2C, addr 0x5d, on the GENI I2C at 0xc80000.
+
 Direct evidence (root shell on device):
+
   /sys/bus/i2c/devices/3-005d/name -> gt9886_V2
+
   /sys/bus/i2c/devices/3-005d     -> ../../../devices/platform/soc/c80000.i2c/i2c-3/3-005d
+
   dtbo idx5 fragment@48 goodix_i2c@5d compatible=goodix,gt9886_V2 agrees.
+
 Correction to an earlier reading: CONFIG_TOUCHSCREEN_SYNAPTICS_TCM / _ST being =y
+
 in /proc/config.gz does NOT mean this unit binds them. vivo ships one kernel image
+
 covering several touch modules of the board family; the bound client is gt9886_V2.
+
 Input layer: vivo_ts (virtual, PROP=2, handlers sde/kgsl) and vivo_ts_fp.
+
 Driver binding (root shell):
+
   /sys/bus/i2c/drivers/goodix_i2c  exists (only goodix driver present)
+
   /sys/devices/.../3-005d/modalias  -> i2c:gt9886_V2
+
   client dir exposes driver, modalias, name, of_node, power, subsystem, uevent
+
   -> the bound DT node is readable at .../3-005d/of_node/, which is where the
+
      IRQ and reset GPIO numbers must be taken from.
+
 """
+
 evidence = ["adb /sys/bus/i2c/devices/3-005d/name", "adb ls -l /sys/bus/i2c/devices/3-005d",
+
             "adb /sys/bus/i2c/drivers", "adb /proc/config.gz", "extract/dtbo/dtbo-idx5.txt"]
+
 pending = ["confirm irq/reset GPIO numbers with a labelled `od -An -tx1` per property",
+
            "GT9886 firmware/contact protocol (goodix vendor protocol, not mainline gt9xx)",
+
            "decide: port vivo's gt9886_V2 driver vs implement a minimal I2C+IRQ reader"]
+
 backlight_analysis = """
+
 Two raw backlight devices, both type=raw (register-backed, no platform/firmware glue):
+
   /sys/class/backlight/backlight         max 4095, current 4095
+
   /sys/class/backlight/panel0-backlight  max 1023, current 0
+
 Reading: 4096 levels = 12-bit scale, 1024 levels = 10-bit scale.
+
 This matches an OLED driven by DSI commands, not a PMIC WLED block:
+
   panel0-backlight (10-bit) -> panel DBV (DSI 0x51), 0 while the panel runs in
+
                                its DC-dimming state
+
   backlight        (12-bit) -> DC dimming / ACL level, 4095 = no dimming
+
 /sys/lcm/bl_level reports 0000, i.e. it is not the active brightness scale.
+
 Consequence for the port: brightness is a DSI-command path, so an XNU backlight
+
 driver would have to write DSI packets. For first bring-up keep the firmware's
+
 brightness and defer DBV/DC-dimming control; AppleARMBacklight can be wired later
+
 once we own the DSI controller.
+
 """
+
 measured = """
+
 of_node values, decoded from big-endian cells (labels verified per file):
+
   goodix,irq-gpio   = <0x38 0x7a 0x0>  cell0 = tlmm phandle 56, gpio 122, flags 0
+
   goodix,reset-gpio = <0x38 0x36 0x0>  cell0 = tlmm phandle 56, gpio 54,  flags 0
+
   goodix,irq-flags  = <0x2>            -> IRQ_TYPE_EDGE_FALLING
+
   goodix,panel-max-x = 0x438 = 1080    goodix,panel-max-y = 0x924 = 2340
+
   goodix,panel-max-w = 0x200 = 512     goodix,panel-max-p = 0x200 = 512
+
   vts-ic-number = 0x2e (46)            vts-type = 0
+
 Both GPIO properties share the same leading cell (56), which is the tlmm phandle,
+
 not a pin number - reading it as the pin was the earlier mistake.
+
 """
+
+
 
 [gpu]
+
 completion = "not-started"
+
 findings = "Adreno 640 (kgsl@2c00000). Adreno740/AdrenoMetal target A740; A640 needs its own kernel interface component."
+
 pending = ["Adreno640 component", "a640 firmware extraction from vendor"]
 
+
+
 [network]
+
 completion = "in-progress"
+
 findings = """
+
 WLAN = QCA6390. Confirmed twice: dtb index7 qcom,cnss-qca6390 + qcom,icnss, and
+
 /vendor/lib/modules/qca_cld3_wlan.ko on the running device. That is the cld3 /
+
 ath11k lineage, so Ath12kWifi does not apply.
+
 Unused but present: msm_11ad_proxy.ko, wil6210.ko (11ad), mpq-adapter.ko.
+
 Interface name: wlan0; sys.qca1530=detect.
+
 Bluetooth shares the QCA6390 combo; BTFM.bin is in the ROM package.
+
 """
+
 pending = ["ath11k-based component + MHI/ICNSS bring-up", "BT HCI transport (UART vs USB)"]
 
+
+
 [power]
+
 completion = "in-progress"
+
 findings = """
+
 USB primary dwc3 @0xa600000, secondary @0xa800000. UART2 (console) @0xa90000.
+
 Audio (root adb, input nodes + vendor DAI names): the runtime sound card is
+
 sm8150-TAVIL-snd-card, i.e. the Tavil/WCD934x codec path, NOT pahu.
+
 External chain from vendor DAI names:
+
   qcom,mi2s-pri-tas-spk-rx  -> Primary MI2S   -> TAS2560 speaker amp
+
   qcom,mi2s-sec-ak-hifi-rx  -> Secondary MI2S -> AK4377A hifi DAC
+
   qcom,mi2s-quat-ia6xx-rx/tx-> Quaternary     -> Knowles IA6xx voice wake
+
   awinic,aw87319_pa         -> smart PA
+
 Haptics = PM8150B haptics@c000 (qti-haptics, FF). Power key = PM8150 power-on@800.
+
 """
+
 pending = ["PMIC/SPMI ownership (PM8150 + PM8150B + PM8150L)",
+
            "battery fuel gauge (PM8150B FG)",
+
            "CPU freq domains",
+
            "audio: Tavil codec + TAS2560 + AK4377A + AW87319; defer IA6xx"]
 
+
+
 [uefi]
+
 completion = "host-verified"
+
 findings = """
+
 FIRST FIRMWARE BUILD SUCCEEDED (host-verified; not yet run on hardware).
+
   tree   : /root/uefi-sheng (UniXNU/uefi-sheng, Mu-Silicium lineage)
+
   pkg    : Platforms/VIVO/pd1936Pkg, generated by scripts/prepare-pd1936-uefi.py
+
   cmd    : build -p Platforms/VIVO/pd1936Pkg/pd1936.dsc -a AARCH64 -b DEBUG -t CLANGPDB
+
                   -D FD_BASE=0x9fc00000 -D FD_SIZE=0x300000 -D FD_BLOCKS=768
+
   output : Build/pd1936Pkg/DEBUG_CLANGPDB/FV/SILICIUM_UEFI.fd = 3145728 B = 0x300000,
+
            exactly the UEFI FD window measured in xbl.elf. rc=0.
+
   MuPatches AsmMacroLib.patch and Timer.patch applied cleanly; BaseTools built from the
+
   mu_basecore feed (361 MB) with -j12.
+
 boot.img (Mu convention, [boot_image_kernel] append_dtb = true):
+
   header v1, page 4096, kernel_addr 0x8000 (same as stock), tags_addr 0x1e00000
+
   kernel field 1306688 B = gzip(BootShim 192 B + FD 3145728 B) || merged DTB 676013 B
+
   total 1314816 B; tools/verify_bootimg.py confirms the inner FD sha equals the built FD
+
   and the appended DTB sha equals dts/vivo-pd1936.dtb (model: SM8150 v2 SoC).
+
 Host toolchain: WSL Ubuntu 22.04, clang/lld/llvm + nasm + iasl + dtc, Python 3.11
+
 (deadsnakes), git with http.version=HTTP/1.1 because the GitHub path kept truncating TLS;
+
 every submodule eventually recovered on retry.
+
 """
+
 written = """
+
 Device package written under mu_aloha_platforms/Platforms/SurfaceDuo1Pkg/Device/vivo-pd1936:
+
   * Library/PlatformMemoryMapLib/PlatformMemoryMapLib.c
+
       rewritten from this device's own xbl.elf 77-entry map and /proc/iomem:
+
         Display Reserved 0x9C000000+0x02400000, FV Region 0x9F800000,
+
         ABOOT FV 0x9FA00000, UEFI FD 0x9FC00000+0x00300000,
+
         SEC heap/vectors/pagetables/stack/log/info 0x9FF00000..0xA0000000,
+
         MLVM_APSS 0xA0000000, MLVM_1 0xA8800000, MLVM 0xB0400000 (reserved),
+
         DXE Heap 0xC0000000+0x03500000, DDRTest 0xC7800000,
+
         bank1 0xC0000000..0xFFD05FFF, bank2 0x100000000..0x27FFFFFFF
+
       validated by tools/check_memmap.py against the 9 measured System RAM ranges
+
   * PcdsFixedAtBuild.dsc.inc
+
       1080x2340 framebuffer, SM8150 / vivo / iQOO Neo 855 / PD1936 SMBIOS strings
+
 """
+
 evidence = ["out/SILICIUM_UEFI.fd", "out/boot.img", "tools/verify_bootimg.py",
+
             "tools/check_memmap.py", "extract/xbl-memmap.txt"]
+
 pending = ["flash to the recovery slot and confirm the UEFI menu / DXE log on the panel",
+
            "build payload.img (volume PD1936) so the menu has an xnu entry",
+
            "panel preset mismatch: FV carries 1080x2340 s6e3fc2x01 (60/61fps) and s6e3ha8",
+
            "  XMLs only, while this panel runs 62.0 Hz with an unreadable IC",
+
            "ACPI/DSDT.aml is still the reference device's; needs ours from UEFIReader/vendor",
+
            "Binaries/ are the reference device's DXE set; replace with UEFIReader(xbl.elf) output"]
 
+
+
 [boot]
+
 completion = "in-progress"
+
 findings = """
+
 Stock boot.img: header v2, page 4096, kernel at 0x1000, tags_addr 0x100, no
+
 ramdisk, 12 appended DTBs, index 7 = SM8150 v2 (ro.boot.dtb_idx).
+
 fastboot getvar all (device in bootloader):
+
   unlocked:yes      secure:yes      product:msmnile      kernel:uefi
+
   logical-block-size 0x1000   erase-block-size 0x1000
+
   max-download-size 805306368 (768 MiB)
+
   partition-size:boot     0x6000000  (96 MiB, matches the stock boot.img size)
+
   partition-size:userdata 0x3914BF3000 -> cross-verifies last_lba 62056442
+
   A-only: no current-slot / slot-count variables were reported
+
 `kernel:uefi` indicates the ABL expects a UEFI-style boot payload, which is
+
 consistent with the UniXNU/BootShim model, but it does NOT prove that
+
 `fastboot boot <image>` is permitted.
+
 """
+
 evidence = ["fastboot getvar all", "adb /proc/partitions", "extract/offline-report.txt"]
+
 pending = ["GATE RESULT (negative): fastboot boot is NOT implemented by the PD1936 ABL.",
+
            "  Observed: downloading 'boot.img'... OKAY, booting..., FAILED (remote: unknown command).",
+
            "  The download path works; the boot command itself is absent.",
+
            "  => the non-destructive `fastboot boot` workflow that uniXNU documents",
+
            "     assumes is unavailable on this device.",
+
            "PLAN CHANGE: deploy by `fastboot flash boot`, with a full stock backup first.",
+
            "  1) adb (root): dd if=/dev/block/by-name/boot of=/sdcard/stock-boot.img, pull it",
+
            "  2) fastboot flash boot <image> ; fastboot reboot",
+
            "  Keep the stock image and the ROM package (which includes prog_firehose_ddr.elf",
+
            "  and rawprogram*.xml) as the recovery path for a soft brick.",
+
            "  Cost: every bring-up iteration writes NAND instead of a RAM boot."]
+
 flash_path = """
+
 Recovery assets already on hand:
+
   * full ROM split package PD1936_A_9.15.14 (boot.img, abl.elf, xbl.elf, gpt_*.bin)
+
   * prog_firehose_ddr.elf + rawprogram*.xml + patch*.xml  -> EDL (9008) restore possible
+
   * device is unlocked with verifiedbootstate=orange, so the boot partition is not
+
     AVB-verified; a self-built image should be accepted for flashing.
+
 Confirmed by the owner: Magisk was installed with `fastboot flash`, so the flash
+
 channel and an unlocked ABL are already proven on this unit.
 
+
+
 RECOVERY LADDER (decided):
+
   0. backups: dd boot + recovery from the device, keep md5, plus the ROM copies
+
   1. bad boot image      -> fastboot flash boot <stock>            (no TWRP needed)
+
   2. ABL/boot chain dead -> EDL 9008 with prog_firehose_ddr.elf + rawprogram*.xml
+
   3. broken system only  -> recovery / fastboot -w
+
   TWRP adds nothing here: it is itself a boot image and needs the same fastboot
+
   channel to install, so it cannot help in the one case where fastboot is gone.
 
+
+
 EXPERIMENT SLOT (chosen over flashing boot):
+
   `recovery` is 0x6000000 (96 MiB), the same size as boot. Bring-up images are
+
   flashed to recovery and started with Vol-Up+Power (or adb reboot recovery), so
+
   the stock boot stays intact and Android remains bootable throughout bring-up.
+
   This reproduces the `fastboot boot` workflow that this ABL does not implement.
+
 """
+
+
 
 [packaging]
+
 completion = "not-started"
+
 pending = ["scripts/package.sh from templates/package.sh", ".github/workflows/package.yml", "--check --os 17"]
 
+
+
 [vendor_analysis]
+
 completion = "source-reviewed"
+
 modded_image = """
+
 D:/123Download/viq/111v/bin/vendor.img  is 554,385,408 bytes and 100% ZERO.
+
   non-zero bytes: 0 (scanned the whole file in 16 MiB windows)
+
 It contains no code, no config, no filesystem: it cannot remove any vendor
+
 restriction, and flashing it would simply erase the vendor partition.
+
 The bootloader unlock on this unit therefore came from somewhere else (the
+
 official vivo unlock path writes devinfo / fuse state, not vendor).
+
 """
+
 stock_image = """
+
 ROM split: vendor_1..19.img concatenated = 1,300,586,496 B; the ext4 superblock
+
 declares 515995 x 4096 = 2,113,515,520 B, so the ROM only ships the used part.
+
 Volume name "vendor", UUID 73fbcbc8-c941-55c6-a927-5eaa41dad5dd.
+
 """
+
 findings = """
+
 A raw string scan (5,105,012 printable strings) with strict patterns shows the
+
 vendor partition carries NO bootloader policy:
+
   boot/unlock bucket: 5 hits, all benign -
+
       BootLoaderVersion, fastbootd, fastbootd_protocol_prop,
+
       bootloader_boot_reason_prop, relockCount
+
   avb/verity bucket : 45 hits, all user-space libavb symbols
+
       (avb_rsa_verify, avb_sha256_*, verified_boot_state/key/hash) used by OTA and
+
       fastbootd - the loader-side check lives in ABL/XBL, not here
+
   vivo props        : only SIM lock (ro.vivo.sim_lock.needpw/pw.fmt/pw.len)
+
   unlocked reaction : DEVICE_ROOTED, device_status_rooted, KM_UNLOCKED_DEVICE_REQUIRED,
+
       unlocked_device_required - runtime detection, not a boot gate
+
   vivo services     : 290 vendor.vivo.hardware.* HALs, including
+
       sectee@1.0-service, capacity_key@1.0-service, omnipotentservice@1.0-service,
+
       lcmctl@1.0-service, vdtf@1.0-service
+
   factory/after-sale: uefi_vivo_factory_flag, vivo_factory_debug_handler,
+
       vivo_aftersale_command_hdlr (engineer-mode / service tooling, user space)
+
 Conclusion: every restriction present in vendor is an ANDROID-side behaviour
+
 (root detection, HAL isolation, factory tooling). None of it can gate the
+
 bootloader, and none of it is touched by the UniXNU chain
+
 (ABL -> BootShim -> UEFI -> XNU), which never runs inside Android.
+
 """
+
 evidence = ["tools/vendor_strict_scan.py", "tools/vendor_restriction_scan.py",
+
             "tools/vendor_mod_scan.py", "tools/vendor_format_probe.sh"]
+
 pending = ["verify on the device that /vendor is intact (in case the zero image was flashed)"]
+
+
 
