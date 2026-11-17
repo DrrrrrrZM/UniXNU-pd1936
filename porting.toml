@@ -115,13 +115,38 @@ CORRECTION recorded earlier: the UFS host *base* matches SM8550's slot
 (0x1d84000) but host length (0x2500 vs 0x3000), PHY (0x1d87000/0xda8 vs
 0x1d80000/0x2000) and clock tables differ. Only ShengUfs's access model
 transfers; PHY/clocks/SMMU/link must be SM8150-specific.
+
+UEFI-SIDE MEASUREMENTS (through the framebuffer DEBUG console, 2026-11):
+  * the ABL leaves the controller ENABLED and its transfer list RUNNING:
+      0x34 CONTROLLER_ENABLE = 1
+      0x60 TRANSFER_REQ_LIST_RUN_STOP = 1
+      0x30 CONTROLLER_STATUS = 0x0000010F
+      0x38..0x48 UIC error codes = 0
+      0x08 UFS_VERSION = 0x00000300  -> UFSHCI 3.0 (offsets from Linux ufshci.h)
+    so no PHY init, no clock enable and no HCI reset is required.
+  * UTRL is CPU-readable at 0x9FFAE000 (0x50 BASE_L = 0x9FFAE000, 0x54 BASE_H = 0);
+    0x70 TASK_REQ_LIST_BASE_L = 0x9FFAF000.
+  * UTRL[0] points at UTRD 0x05000000, which is NOT CPU-accessible: unmapped it
+    raises a translation fault (ESR 0x96000006, FAR 0x05000000), and after adding
+    it to the memory map as normal memory the read hangs. A UTRD in CPU-writable
+    DRAM is therefore the only option, subject to the SMMU.
+  * SMMU is active: IDR0=0x00250406 (SMMU-500), IDR1=0, GBPA=0x00005555,
+    GFSR=0x00000039 (faults recorded). Reading 0x15009800 hangs because the
+    register window ends at 0x15000FFF; the S2CR slot for stream 0x300 is unknown.
+  * WHY THIS MATTERS: the boot image cannot carry the payload (ramdisk_size must be
+    0; kernel field tolerates only ~3-4 MiB), so storage access is the only route.
 """
 evidence = ["adb /proc/partitions", "adb /sys/devices/platform/soc/1d84000.ufshc/",
-            "adb /sys/class/scsi_device/*/device/model", "extract/xbl-memmap.txt"]
-pending = ["link gear/lane readout (host0 scsi_host attributes)",
-           "decide how HPB / write-booster are handled when XNU owns the host",
-           "SM8150 PHY init sequence for HS-G4", "GCC UFS clock branch table",
-           "apps-SMMU stream id"]
+            "adb /sys/class/scsi_device/*/device/model", "extract/xbl-memmap.txt",
+            "firmware console: UFSHCI register dump (docs/ufs-bringup.md)",
+            "firmware console: UTRL/UTMRL words, SMMU IDR0/GBPA/GFSR",
+            "Synchronous Exception dump at FAR=0x05000000"]
+pending = ["queue one SCSI READ(10) from our own UTRL/UTRD in CPU-writable DRAM",
+           "verdict: OCS==0 (path works) / OCS error + GFSR growth (patch S2CR for stream 0x300 to bypass) / never completes (re-check UFSHCI 3.0 sequencing)",
+           "read-only BlockIo driver, placed in UniXNU-sm8150-common",
+           "format cache as FAT16 with EFI/UniXNU/Payloads/(kernel.macho, adt, trustcache)",
+           "SM8150 PHY init sequence for HS-G4 (only needed if the ABL state is lost)",
+           "decide how HPB / write-booster are handled when XNU owns the host"]
 
 [display]
 completion = "source-reviewed"
@@ -394,3 +419,4 @@ bootloader, and none of it is touched by the UniXNU chain
 evidence = ["tools/vendor_strict_scan.py", "tools/vendor_restriction_scan.py",
             "tools/vendor_mod_scan.py", "tools/vendor_format_probe.sh"]
 pending = ["verify on the device that /vendor is intact (in case the zero image was flashed)"]
+
