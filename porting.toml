@@ -328,6 +328,17 @@ entry holds the PPID at bits[19:8], obsrvr + 0x10000*ee + 0x80*apid, command
 write opcode are dropped - the same 'apid write_ee != our ee' rule that Linux enforces. Software
 VBUS is therefore closed; only an externally powered hub or a self-powered drive can prove the
 USB channel.
+
+SESSION 2026-11-17 SUMMARY: boot chain, framebuffer console and XNU CI build all fine. Storage is
+closed: the UFS controller answers UIC commands and its clocks/reset/PHY are up, but the first
+descriptor fetch hangs the bus; there is no iommus binding to fix, RESTORE_SEC_CFG is implemented
+yet refuses every device id, and the device's own signed UFSDxe (public via
+Project-Aloha/UEFIFirmwareBackup) cannot run outside XBL - its real DEPEX was recovered but the
+infrastructure drivers hang first. USB is the only physically plausible channel left: dwc3 accepts
+host role, XHCI reports 1.1 with PP=1/PLS=5, and the mass-storage stack binds, but VBUS is absent
+because SPMI writes are dropped (arbiter v5 reads work; every APID mapped to the PM8150 GPIO9 page
+rejects writes). SCM exposes 120 calls; the memory-protection ones reject real arguments with -5,
+except SVC_SMMU_PROGRAM 0x02 which answered +4 and is awaiting a 12-vector argument sweep.
 """
 
 evidence = ["adb /proc/partitions", "adb /sys/devices/platform/soc/1d84000.ufshc/",
