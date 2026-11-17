@@ -16,7 +16,7 @@ way of delivering the payload.
 | UniXNU boot menu | **displayed on hardware** |
 | `kernel.macho` + `payload.img` | **built by CI** (51.9 MB / 75 MiB) |
 | Payload delivery | **blocked**: `ramdisk_size` must be 0, and the kernel field only tolerates ~3-4 MiB (3.0 boots, 7.3 falls back) |
-| UFS controller (for a payload partition) | controller is **alive**, but its DMA is **refused by the secure world**: `RESTORE_SEC_CFG` exists in the TZ yet rejects every device id 1..20 from a non-secure caller |
+| UFS controller (for a payload partition) | command engine **alive** (UIC commands complete, clocks on, not in reset), but the controller's own **memory access is fenced**: the DMA fetch hangs while UIC works, there is no IOMMU binding to fix, and the secure world refuses `RESTORE_SEC_CFG` for all device ids |
 | Menu input (buttons) | frozen: all three keys are SPMI (arbiter v5); observer and TLMM both read 0 |
 | iOS / macOS userland | out of scope for now |
 
