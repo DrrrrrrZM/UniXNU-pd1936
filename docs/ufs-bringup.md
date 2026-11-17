@@ -163,3 +163,61 @@ needs a different answer:
 - shrink the payload below the ~3-4 MiB kernel-field limit (not reachable: `kernel.macho`
   is 49.5 MB), or
 - keep the whole thing inside a boot ramdisk (this ABL refuses any `ramdisk_size > 0`).
+
+## 7. Secure world: implemented, but closed to us
+
+`docs/ufs-bringup.md` section 6 left one question: is the DMA refusal something the secure
+world can be asked to lift? The SCM interface exists for exactly that, so it was called
+directly from the firmware with `smc #0`.
+
+Numbers (Linux `drivers/firmware/qcom/qcom_scm.h`, `qcom_scm-smc.c`):
+
+```
+SCM_SMC_FNID(s, c) = (s << 8) | c
+x0                  = 0x80000000 | (OWNER_SIP << 24) | fnid      (FAST_CALL, SMC32)
+QCOM_SCM_SVC_INFO = 0x06 , QCOM_SCM_INFO_IS_CALL_AVAIL = 0x01
+QCOM_SCM_SVC_MP   = 0x0C , QCOM_SCM_MP_RESTORE_SEC_CFG  = 0x02
+QCOM_SCM_UFS_DEV_ID = 19 , QCOM_SCM_ICE_DEV_ID = 20
+```
+
+What the device answered:
+
+| Probe | Result |
+|---|---|
+`IS_CALL_AVAIL(MP, RESTORE_SEC_CFG)` | `x0 = 0` (call delivered), **`x1 = 1` -> the TZ implements it** |
+`RESTORE_SEC_CFG(dev=19, spare=0)` | `x0 = 0xFFFFFFFFFFFFFFFE` (-2), `x1 = -4`, `S2CR[0x300]` unchanged |
+`RESTORE_SEC_CFG(dev=19, spare=1)` | same |
+`RESTORE_SEC_CFG(dev=20, spare=0)` | same |
+`RESTORE_SEC_CFG(dev=19, spare=0x10)` | same |
+`RESTORE_SEC_CFG(dev=1 .. 20, spare=0)` | **all 20 rejected with -2**, `S2CR[0x300]` never changed |
+
+### Verdict
+
+- The interface is **present** in this device's TZ (`x1 = 1`), so the earlier guess "maybe the
+  TZ does not have it" is wrong.
+- Every non-secure invocation is **refused**, including for device ids that have nothing to do
+  with storage (1 = MDSS, 18 = GFX). The refusal is not about the UFS id: it is about **who is
+  asking**. The call is reserved for the secure world itself (i.e. the ABL / TZ boot flow).
+- This matches the SMMU observation: the UFS master's stream configuration lives in a bank a
+  non-secure write cannot change (`arm-smmu-qcom.c` documents firmware that rewrites S2CR
+  FAULT/BYPASS writes).
+
+Consequence, stated plainly: **a plain MMIO READ(10) needs no secure world, but making the
+DMA legal does, and the secure world refuses us.** Firmware-side UFS is therefore closed on
+this device, and with it gate G1 in its current form:
+
+| Channel for the payload | State |
+|---|---|
+kernel field | <= ~3 MiB, already occupied by the 3 MiB firmware volume |
+boot ramdisk | this ABL requires `ramdisk_size = 0` |
+DTB field | ABL ignores it and passes its own 679525-byte tree; padding to 4 MiB even fails to boot |
+recovery partition | never booted by this ABL |
+UFS read from firmware | DMA refused by the secure world (this section) |
+USB host (mass storage) | possible in principle, but the phone's port is device-only and no XHCI host driver exists yet |
+
+What would still work, none of it available today:
+
+1. an ABL that leaves the DMA path open, or an SCM call the TZ accepts for a non-secure
+   caller;
+2. a payload small enough for the ~3 MiB kernel field (the kernel is 49.5 MB);
+3. a firmware-side USB host stack driving a mass-storage device or a second phone.
