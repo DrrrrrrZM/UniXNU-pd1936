@@ -296,6 +296,17 @@ SCM VERDICT (same day, direct smc #0 from the firmware):
   for the secure world. Together with the SMMU quirk (firmware turns S2CR BYPASS writes into
   FAULT) this closes the firmware-side UFS path: READ(10) itself needs no secure world, but
   making its DMA legal does, and that is refused.
+
+FINAL ISOLATION (same day): controller command engine verified alive - UIC_CMD_DME_GET
+completed on the first poll after a working W1C clear of IS. All UFS clocks report not-gated
+(0x77010/14/18/1c/58/5c/90/ac/c0/8c000, core_clk=0x4221), UFS_PHY_BCR=0 (not in reset),
+GDSCR low byte 0 (not collapsed). The live device tree shows ufshc@1d84000 has NO iommus
+property, so the earlier S2CR work targeted the wrong block. SCM IS_CALL_AVAIL says
+RESTORE_SEC_CFG exists (x1=1) but every device id 1..20 is refused with -2. The only step
+that fails is the controller DMA-fetching a UTRD (door bell while the list is stopped is
+harmless; starting the list and ringing hangs the device). Conclusion: the UFS master's
+access to HLOS memory is fenced by platform memory protection (XPU/DDR, secure-world
+configured). G1 is blocked by the platform, not by missing driver code.
 """
 
 evidence = ["adb /proc/partitions", "adb /sys/devices/platform/soc/1d84000.ufshc/",
