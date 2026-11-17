@@ -221,3 +221,45 @@ What would still work, none of it available today:
    caller;
 2. a payload small enough for the ~3 MiB kernel field (the kernel is 49.5 MB);
 3. a firmware-side USB host stack driving a mass-storage device or a second phone.
+
+## 8. Final isolation: the controller works, its memory access does not
+
+Each row below is a measurement from the device, not an inference.
+
+| Question | Measurement | Verdict |
+|---|---|---|
+Is the controller alive at all? | `UIC_CMD_DME_GET` with an invalid attribute: IS completion bit cleared with W1C (`00000400 -> 00000000`), then the command **completed on the first poll** (`polls=1`, IS back to `00000400`) | **yes, the command engine works** |
+Are the UFS clocks enabled? | GCC `0x77010/0x77014/0x77018/0x7701c/0x77058/0x7705c/0x77090/0x770ac/0x770c0/0x8c000` all report bit31 = 0 (not gated), `core_clk` = `0x00004221` | **all on** |
+Is the controller in reset or collapsed? | `0x77000` (UFS_PHY_BCR) = `0`, GDSCR `0x77004` low byte 0 (no SW collapse) | **released, powered** |
+Does the UFS master go through the apps SMMU? | live device tree `ufshc@1d84000` has **no `iommus` property** (full property list read from `/proc/device-tree`) | **no** — the earlier `S2CR[0x300]` work was aimed at the wrong block |
+Can the secure world be asked to lift a restriction? | `IS_CALL_AVAIL(MP, RESTORE_SEC_CFG)` -> `x1 = 1` (implemented), but `RESTORE_SEC_CFG` returns `0xFFFFFFFFFFFFFFFE` for **every** device id 1..20 | **refused for a non-secure caller** |
+Can the controller fetch a transfer descriptor? | ringing the door bell while the list is stopped is harmless; starting the list and ringing it **hangs the device** | **no — this is the only broken step** |
+
+Sequence of the last few probes, for the record:
+
+```
+IS 00000400 -> after W1C 00000000 (cleared=yes)          <- completion bit is W1C and works
+Uic2: polls=1 IS=00000400 arg1=0000DEAD arg2=0 arg3=0    <- UIC command completed
+Gcc 077010 core_clk = 00004221 [on]                      <- clocks are not the problem
+Gcc 077000 UFS_PHY_BCR = 00000000                        <- not held in reset
+```
+
+### Conclusion
+
+The controller accepts commands and its registers behave, but the moment it has to read
+memory on its own it stops the bus. Combined with:
+
+- no IOMMU binding for this master (so no SMMU mapping to fix),
+- all clocks and power present,
+- the secure world's restore-sec-cfg interface refusing every device id,
+
+the remaining explanation is that the UFS master's access to HLOS memory is fenced by
+platform memory protection (Qualcomm XPU / DDR protection configured by the secure world).
+That is not something a UEFI driver can undo, and it is consistent with "Linux works": Linux
+runs with the votes and the protection state the secure world set up for it after the
+hand-off that we never perform.
+
+**Gate G1 is therefore blocked by platform memory protection, not by missing driver code.**
+Any further progress on payload delivery would need one of: an ABL that performs the normal
+Linux-style hand-off for our image, a secure-world call that succeeds, or a completely
+different transport (USB host), which is likely fenced the same way and has not been tested.
