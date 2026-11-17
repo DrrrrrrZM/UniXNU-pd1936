@@ -307,6 +307,27 @@ that fails is the controller DMA-fetching a UTRD (door bell while the list is st
 harmless; starting the list and ringing hangs the device). Conclusion: the UFS master's
 access to HLOS memory is fenced by platform memory protection (XPU/DDR, secure-world
 configured). G1 is blocked by the platform, not by missing driver code.
+
+VENDOR BINARY EXPERIMENT: this device's own UEFI driver set is public
+(Project-Aloha/UEFIFirmwareBackup, iqoo-pd1936: xbl.elf, APRIORI.inc, DXE.inc and 53 signed
+QcomPkg drivers incl. UFSDxe.efi). It contains no XhciDxe, so the other SM8150 ports are not
+reading data from a USB stick - they reuse Qualcomm's UFSDxe. Three attempts here:
+(a) UFSDxe alone -> returns ERROR: C90000002:V03000007 IO (binds nothing);
+(b) UFSDxe + 17 platform drivers after CpuDxe -> ChipInfoDxe hangs, black screen, reset;
+(c) same set in the vendor APRIORI order (Scm/Tz first) -> ScmDxeLA hangs, black screen, reset.
+Conclusion: these are XBL userspace binaries that assume XBL's SMEM/shm-bridge/TZ runtime,
+which a BootShim payload does not provide. Vendor binaries are recorded as a reference for
+driver order, not as a drop-in solution.
+
+USB HOST RESULT: dwc3 accepts host role (GCTL PrtCapDir read back 1), XHCI reports 1.1 with
+PP=1 and PLS=5 (RxDetect), and XhciDxe/UsbBusDxe/UsbMassStorageDxe all bind. What is missing is
+VBUS: CCS stays 0 and disks stay dark. The device tree puts VBUS on SPMI (PM8150 GPIO9
+usb2_vbus_boost, PM8150B smb5 otg). SPMI reads work from the firmware (arbiter v5, APID map
+entry holds the PPID at bits[19:8], obsrvr + 0x10000*ee + 0x80*apid, command
+(opc<<27)|((addr&0xFF)<<4)|bc), but writes through every APID mapped to the GPIO9 page and every
+write opcode are dropped - the same 'apid write_ee != our ee' rule that Linux enforces. Software
+VBUS is therefore closed; only an externally powered hub or a self-powered drive can prove the
+USB channel.
 """
 
 evidence = ["adb /proc/partitions", "adb /sys/devices/platform/soc/1d84000.ufshc/",
