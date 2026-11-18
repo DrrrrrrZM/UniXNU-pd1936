@@ -104,6 +104,20 @@ jobs:
           python3 UniXNU/unixnu build payload -D device --os "${{ inputs.os }}"
           python3 UniXNU/unixnu build firmware -D device --os "${{ inputs.os }}" --uefi uefi-pd1936
 
+      - name: strip kernel symbols to fit the 36 MiB payload budget
+        run: |
+          K=$(ls UniXNU/out/pd1936/*/*/kernel/kernel.macho | head -1)
+          echo "before: $(stat -f%z "$K") bytes"
+          # DEBUG kernels carry full DWARF; PD1936's ABL refuses an image larger than ~40 MiB,
+          # so the payload has to stay small. Drop debug info first, then all symbols if needed.
+          llvm-strip --strip-debug "$K" || llvm-strip -S "$K" || true
+          echo "after --strip-debug: $(stat -f%z "$K") bytes"
+          if [ "$(stat -f%z "$K")" -gt 26000000 ]; then
+            llvm-strip --strip-all "$K" || llvm-strip -s "$K" || true
+            echo "after --strip-all: $(stat -f%z "$K") bytes"
+          fi
+          ls -l "$K"
+
       - name: assemble boot.img with the payload ramdisk
         run: |
           PAYLOAD=$(ls UniXNU/out/pd1936/*/*/payload/payload.img | head -1)
