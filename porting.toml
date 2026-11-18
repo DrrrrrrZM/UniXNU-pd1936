@@ -339,6 +339,13 @@ host role, XHCI reports 1.1 with PP=1/PLS=5, and the mass-storage stack binds, b
 because SPMI writes are dropped (arbiter v5 reads work; every APID mapped to the PM8150 GPIO9 page
 rejects writes). SCM exposes 120 calls; the memory-protection ones reject real arguments with -5,
 except SVC_SMMU_PROGRAM 0x02 which answered +4 and is awaiting a 12-vector argument sweep.
+
+SCM VERDICT (2026-11-18): the SVC_SMMU_PROGRAM sweep (12 vectors, arg counts 0..6, SIDs 0/0x300)
+produced no x0=0, and CP_SMMU_APERTURE_ID / MP_ASSIGN / 0x0E / 0x0F / 0x23 are all rejected. The
+only accepted call is 0x0C/0x03 IOMMU_SECURE_PTBL_SIZE, which merely reports sizing. No legal SCM
+call lifts the memory fence. Also recorded: hand-written `smc #0` in a DEBUG-heavy driver asserts
+in DebugLib because the TZ return path is not reflected in the asm clobber list - use
+ArmSmcLib.ArmCallSmc() instead.
 """
 
 evidence = ["adb /proc/partitions", "adb /sys/devices/platform/soc/1d84000.ufshc/",
