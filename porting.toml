@@ -355,6 +355,17 @@ firmware built. 39 functions reference gQcomScmProtocol and they use svc 0x06 (I
 (LMH) only - no SVC_MP (0x0C) and no SVC_SMMU_PROGRAM (0x15) call exists in XBL's UEFI phase, so
 the memory protection is configured by the TZ boot flow, not here. There is therefore no reference
 argument set to copy, which closes the legal-SCM route with evidence.
+
+KERNEL-FIELD PAYLOAD CHANNEL (2026-11-18, measured): the payload rides behind the UEFI FD inside
+the kernel field. ABL loads the field at 0xC0080000 (0xC0000000 + text_offset 0x80000); BootShim
+copies the FD to 0x9FC00000 and records {magic 'SHIM', payload addr, payload size} at 0x9BA00000;
+the firmware reads the payload directly (verified: head 'PD1936PAYLOAD-v1' MATCH). ABL honours the
+ARM64 header image_size, so that field must cover the payload (build-time PAYLOAD_SIZE). Measured
+budget: 8/28/36 MiB payload boot, 44 MiB refused -> ~36 MiB usable, plus 2 MiB free by shrinking
+FD_SIZE 3 MiB -> 1 MiB. The earlier "kernel field is ~3 MiB" conclusion was a layout artefact.
+Protocol: flash the retail boot image before every attempt, otherwise bootonce-bootloader in misc
+forces fastboot and every test looks like a failure. MemDiskDxe publishes BlockIo over the payload
+so PartitionDxe+Fat+DarwinBoot work unchanged.
 """
 
 evidence = ["adb /proc/partitions", "adb /sys/devices/platform/soc/1d84000.ufshc/",
