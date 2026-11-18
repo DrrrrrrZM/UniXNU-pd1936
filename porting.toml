@@ -346,6 +346,15 @@ only accepted call is 0x0C/0x03 IOMMU_SECURE_PTBL_SIZE, which merely reports siz
 call lifts the memory fence. Also recorded: hand-written `smc #0` in a DEBUG-heavy driver asserts
 in DebugLib because the TZ return path is not reflected in the asm clobber list - use
 ArmSmcLib.ArmCallSmc() instead.
+
+XBL RE RESULT (2026-11-18): the SCM transport in xbl.elf is
+ScmDxe_QcomScmProtocol_Function7 -> sub_100F29FC -> sub_100F373C, which loads x2..x5 from the args
+array and issues SMC #0 with x0 = fnid|0x40000000 and x1 = arginfo (arg count in the low nibble).
+Call sites show fnid = 0x02000000 | (svc<<8) | cmd (owner SIP), which is exactly what our own
+firmware built. 39 functions reference gQcomScmProtocol and they use svc 0x06 (INFO), 0x08 and 0x13
+(LMH) only - no SVC_MP (0x0C) and no SVC_SMMU_PROGRAM (0x15) call exists in XBL's UEFI phase, so
+the memory protection is configured by the TZ boot flow, not here. There is therefore no reference
+argument set to copy, which closes the legal-SCM route with evidence.
 """
 
 evidence = ["adb /proc/partitions", "adb /sys/devices/platform/soc/1d84000.ufshc/",
