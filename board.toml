@@ -18,6 +18,7 @@ include = [
   "ArmDTPlatform",
   "ArmCpu",
   "SoftwareAES",
+  "AppleKeyStoreState",
   "GopFramebuffer",
   "XnuPrelink",
   "DarwinBoot",
