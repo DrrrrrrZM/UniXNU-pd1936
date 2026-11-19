@@ -22,8 +22,6 @@ include = [
   "GopFramebuffer",
   "XnuPrelink",
   "DarwinBoot",
-  "ArmSmmu4K",
-  "ShengUfs",
 ]
 
 [kernel]
