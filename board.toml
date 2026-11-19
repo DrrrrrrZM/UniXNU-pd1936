@@ -128,8 +128,6 @@ kernel_args = [
   "kextlog=0xfff",
 ]
 
-panic_screen = true
-
 [payload.adt]
 chip_id = "8011"
 
