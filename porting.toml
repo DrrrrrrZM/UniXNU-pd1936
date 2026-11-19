@@ -385,6 +385,17 @@ shorter than the natural death time. The colour bands cover the first 3/16 of th
 short kernel log. The panic screen is installed at _panic and _panic_trap_to_debugger and stays
 silent, so the death is not a hooked panic. Two reset timers exist: ~6-7 s with the kernel running,
 ~73 s with the firmware retained in the menu.
+
+KERNEL PRINTS NOTHING (2026-11-19): the "SecurityLock::LockType ... LockCapsuleInterface" line on
+the panel is firmware (CapsuleRuntimeDxe, GUID 42857F0A-...), not XNU; neither kernel.macho nor
+payload.img contains the string. Zero-delay probes show execution reaches the _PE_init_platform call
+in _arm_init and nothing after it: _machine_startup, _kernel_startup_initialize_upto, _bsd_init and
+_pthread_init probes all fall through to the 6 s natural reset. The kernel therefore dies inside or
+just after _PE_init_platform, where no console exists, which explains the silence. Probe delays must
+be shorter than the natural death time (a 20 s probe against a 6 s death proves nothing) and
+--reset-before is required for non-returning callees. The ADT is structurally complete (14,228 B,
+device-tree/cpus/arm-io/defaults/options/chosen/memory-map/nvram/product/target-type) but small, so
+missing properties rather than missing nodes are the likely cause.
 """
 
 evidence = ["adb /proc/partitions", "adb /sys/devices/platform/soc/1d84000.ufshc/",
