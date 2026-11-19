@@ -121,7 +121,7 @@ kernel_args = [
   "-enable_kprintf_spam",
   "security-mode-change-enable=1",
   "amfi_get_out_of_my_way=1",
-  "pd1936-autoreset=45",
+  "pd1936-autoreset=600",
   "native-ufs-probe=1",
   "boot-progress=1",
   "build-tag=pd1936-01",
