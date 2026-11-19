@@ -375,6 +375,16 @@ SCTLR_EL1 0xC0180D", "ID_AA64MMFR0_EL1 0x101122 (PHRange 2, 4 KiB granule suppor
 loader's own handoff marker, not a display fault; console text renders below it, which also proves
 the GOP -> GopFramebuffer path. It stops there because the payload carries a kernel but no root
 volume (UFS DMA is fenced), which is the expected ceiling for a kernel-only payload.
+
+XNU STOP POINT (2026-11-19, hardware): the kernel executes the entry, builds page tables, enables
+the MMU, reaches IOKit kext matching (SecurityLock prints) and dies before bsd_init() - a probe
+placed after the _bsd_init call in _kernel_bootstrap_thread with a 1 s delay never fires, while a
+stage-3 probe 5 s after the MMU reset does fire, so the probe mechanism is sound. A first bisect
+with a 20 s delay was invalid because the machine dies by itself after 6-7 s; probe delays must be
+shorter than the natural death time. The colour bands cover the first 3/16 of the panel and hid the
+short kernel log. The panic screen is installed at _panic and _panic_trap_to_debugger and stays
+silent, so the death is not a hooked panic. Two reset timers exist: ~6-7 s with the kernel running,
+~73 s with the firmware retained in the menu.
 """
 
 evidence = ["adb /proc/partitions", "adb /sys/devices/platform/soc/1d84000.ufshc/",
