@@ -366,6 +366,15 @@ FD_SIZE 3 MiB -> 1 MiB. The earlier "kernel field is ~3 MiB" conclusion was a la
 Protocol: flash the retail boot image before every attempt, otherwise bootonce-bootloader in misc
 forces fastboot and every test looks like a failure. MemDiskDxe publishes BlockIo over the payload
 so PartitionDxe+Fat+DarwinBoot work unchanged.
+
+FIRST XNU BOOT (2026-11-19, on hardware): the kernel-field payload channel delivered payload.img
+(LZ4, 12,248,931 B -> 78,643,200 B), BlockIo was published, Fat mounted it, DarwinBoot loaded
+kernel.macho and XNU reached EL1 with its MMU on and started kexts. Screen showed "CurrentEL 1
+SCTLR_EL1 0xC0180D", "ID_AA64MMFR0_EL1 0x101122 (PHRange 2, 4 KiB granule supported)" and
+"SecurityLock::LockType: SOFTWARE_LOCK ... LockCapsuleInterface". The green band at the top is the
+loader's own handoff marker, not a display fault; console text renders below it, which also proves
+the GOP -> GopFramebuffer path. It stops there because the payload carries a kernel but no root
+volume (UFS DMA is fenced), which is the expected ceiling for a kernel-only payload.
 """
 
 evidence = ["adb /proc/partitions", "adb /sys/devices/platform/soc/1d84000.ufshc/",
