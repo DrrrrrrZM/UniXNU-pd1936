@@ -123,7 +123,12 @@ kernel_args = [
   "amfi_get_out_of_my_way=1",
   "pd1936-autoreset=45",
   "native-ufs-probe=0",
+  "boot-progress=1",
+  "build-tag=pd1936-01",
+  "kextlog=0xfff",
 ]
+
+panic_screen = true
 
 [payload.adt]
 chip_id = "8011"
