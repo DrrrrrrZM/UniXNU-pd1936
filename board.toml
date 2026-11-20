@@ -22,6 +22,7 @@ include = [
   "GopFramebuffer",
   "XnuPrelink",
   "DarwinBoot",
+  "RamBlock",
 ]
 
 [kernel]
@@ -57,6 +58,7 @@ archives = [
   # PHY 0x1d87000, GCC 0x100000 + 0x77000, SMMU stream 0x300). It can enumerate the
   # LUNs and read blocks, so it is enough to reach the root volume; it cannot write.
   "build-pd1936-ufs-readonly.py",
+  "component:RamBlock",
   # Still to write:
   #   "build-pd1936-armcpu.py"        (ArmCpu source transform, see UniXNU-nabu)
 ]
@@ -107,6 +109,9 @@ SHENG_VENDOR_HW = 0
 # (0x9c000000, 36 MiB) and the shellv/uefi windows, so no extra dtb_node
 # injection is needed.
 dtb = "build/pd1936/pd1936.dtb"
+
+[build]
+data_ramdisk = "seed-root.img"
 
 [payload]
 volume = "PD1936"
