@@ -115,7 +115,7 @@ data_ramdisk = "seed-root.img"
 
 [payload]
 volume = "PD1936"
-size_mib = 75
+size_mib = 200
 loader = "firmware"
 title = "UniXNU (iQOO Neo 855)"
 kernel_args = [
