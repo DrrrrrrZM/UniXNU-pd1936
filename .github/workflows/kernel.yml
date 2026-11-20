@@ -101,7 +101,7 @@ jobs:
           python3 UniXNU/unixnu fetch -D device
           python3 UniXNU/unixnu status --json -D device || true
           python3 UniXNU/unixnu build kernel -D device --os "${{ inputs.os }}"
-          python3 UniXNU/unixnu build payload -D device --os "${{ inputs.os }}"
+          python3 UniXNU/unixnu build payload -D device --os "${{ inputs.os }}" --data-ramdisk device/seed-root.img
           python3 UniXNU/unixnu build firmware -D device --os "${{ inputs.os }}" --uefi uefi-pd1936
 
       - name: strip kernel symbols to fit the 36 MiB payload budget
