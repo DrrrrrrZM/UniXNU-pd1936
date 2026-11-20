@@ -89,6 +89,27 @@ jobs:
           python3 device/scripts/prepare-pd1936-uefi.py \
             --uefi uefi-pd1936 --device device --tree UniXNU
 
+      - name: build the stand-in launchd
+        run: |
+          clang -target arm64-apple-macos11 -nostdlib -O2 -o /tmp/launchd src/hello.c
+          codesign -s - -f /tmp/launchd || true
+          file /tmp/launchd
+          ls -l /tmp/launchd
+
+      - name: build an APFS seed containing /sbin/launchd
+        run: |
+          rm -f /tmp/seed.dmg device/seed-root.img
+          hdiutil create -size 128m -fs APFS -volname PD1936ROOT -format UDRW -o /tmp/seed.dmg
+          MP=$(hdiutil attach -nobrowse -readwrite /tmp/seed.dmg | tail -1 | awk -F'\t' '{print $NF}')
+          echo "mounted at $MP"
+          sudo mkdir -p "$MP/sbin"
+          sudo cp /tmp/launchd "$MP/sbin/launchd"
+          sudo chmod 755 "$MP/sbin/launchd"
+          ls -l "$MP/sbin"
+          hdiutil detach "$MP"
+          cp /tmp/seed.dmg device/seed-root.img
+          ls -l device/seed-root.img
+
       - name: build kernel, payload, firmware
         env:
           UNIXNU_UNIQUE_CHIP_ID: ${{ secrets.UNIXNU_UNIQUE_CHIP_ID }}
