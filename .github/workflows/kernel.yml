@@ -91,7 +91,7 @@ jobs:
 
       - name: build the stand-in launchd
         run: |
-          clang -target arm64-apple-macos11 -nostdlib -O2 -o /tmp/launchd device/src/hello.c
+          clang -target arm64-apple-macos11 -nostdlib -O2 -Wl,-e,_start -o /tmp/launchd device/src/hello.c
           codesign -s - -f /tmp/launchd || true
           file /tmp/launchd
           ls -l /tmp/launchd
