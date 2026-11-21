@@ -141,15 +141,17 @@ jobs:
           fi
           ls -l "$K"
 
-      - name: assemble boot.img with the payload ramdisk
+      - name: report the payload for local packaging
         run: |
           PAYLOAD=$(ls UniXNU/out/pd1936/*/*/payload/payload.img | head -1)
-          python3 device/scripts/make-bootimg.py \
-            --shim-source uefi-pd1936/BootShim/BootShim.S \
-            --fd uefi-pd1936/Build/pd1936Pkg/DEBUG_CLANGPDB/FV/SILICIUM_UEFI.fd \
-            --dtb UniXNU/build/pd1936/pd1936.dtb \
-            --ramdisk "$PAYLOAD" \
-            --out boot.img
+          ls -l "$PAYLOAD"
+          python3 - "$PAYLOAD" <<'EOF'
+          import sys, pathlib
+          p = pathlib.Path(sys.argv[1])
+          print(f"payload.img {p.stat().st_size:,} B")
+          print("packaging into the kernel field happens locally; the 96 MiB boot partition")
+          print("cannot carry this volume in the ramdisk field.")
+          EOF
 
       - name: upload
         uses: actions/upload-artifact@v4
@@ -158,7 +160,6 @@ jobs:
           retention-days: 7
           if-no-files-found: error
           path: |
-            boot.img
             UniXNU/out/pd1936/*/*/kernel/kernel.macho
             UniXNU/out/pd1936/*/*/payload/payload.img
             UniXNU/out/pd1936/*/*/payload/payload.json
