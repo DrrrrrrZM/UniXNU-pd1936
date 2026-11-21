@@ -91,10 +91,20 @@ jobs:
 
       - name: build the stand-in launchd
         run: |
-          cp device/src/launchd-aarch64 /tmp/launchd
+          set -x
+          clang -target arm64-apple-macos11 -nostdlib -O2 -static \
+                -Wl,-e,_start -Wl,-platform_version,macos,11.0,11.0 \
+                -o /tmp/launchd-static device/src/hello.c \
+            || echo "static link failed, will fall back"
+          if [ -f /tmp/launchd-static ]; then
+            codesign -s - -f /tmp/launchd-static || true
+            cp /tmp/launchd-static /tmp/launchd
+          else
+            cp device/src/launchd-aarch64 /tmp/launchd
+          fi
           chmod +x /tmp/launchd
-          codesign -s - -f /tmp/launchd || true
           file /tmp/launchd
+          otool -l /tmp/launchd | grep -E "LC_UNIXTHREAD|LC_LOAD_DYLINKER|LC_CODE_SIGNATURE|entryoff" -A2 || true
           ls -l /tmp/launchd
 
       - name: build an APFS seed containing /sbin/launchd
