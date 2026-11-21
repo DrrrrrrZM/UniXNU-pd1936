@@ -61,6 +61,8 @@ archives = [
   # PHY 0x1d87000, GCC 0x100000 + 0x77000, SMMU stream 0x300). It can enumerate the
   # LUNs and read blocks, so it is enough to reach the root volume; it cannot write.
   "component:ShengUfs",
+  "component:VirtioMmioBlock",
+  "component:VerifiedRoot",
   "component:RamBlock",
   # Still to write:
   #   "build-pd1936-armcpu.py"        (ArmCpu source transform, see UniXNU-nabu)
