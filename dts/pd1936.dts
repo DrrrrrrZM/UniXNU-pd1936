@@ -156,18 +156,23 @@
             reg = <0x0 0x00a90000 0x0 0x4000>;
             status = "okay";
         };
+
+        // UFS controller (SM8150: host 0x1d84000 len 0x2500, ICE 0x1d90000 len 0x8000,
+        // GIC SPI 265). Declared here by path because the label in the shared SoC dtsi
+        // is not visible to this board file. unixnu,adt-name is what makes the ADT
+        // generator export the node under arm-io, which is the nub the kernel's
+        // NativeUfs personality matches on compatible = "qcom,ufshc".
+        ufshc@1d84000 {
+            compatible = "qcom,ufshc";
+            reg = <0x0 0x1d84000 0x0 0x2500>, <0x0 0x1d90000 0x0 0x8000>;
+            reg-names = "ufs_mem", "ufs_ice";
+            unixnu,adt-name = "ufshc";
+            status = "okay";
+        };
     };
 };
 
-// UFS: the shared SoC dtsi declares ufshc@1d84000 with compatible "qcom,ufshc"
-// (reg 0x1d84000/0x2500 + ICE 0x1d90000/0x8000, SPI 265). The board file used to
-// overlay a label "ufs" that does not exist, so the node never reached the ADT.
-// unixnu,adt-name is what makes the ADT generator export a node under arm-io, and
-// that is the nub the kernel's NativeUfs personality matches on compatible.
-&ufshc {
-    status = "okay";
-    unixnu,adt-name = "ufshc";
-};
+
 
 &ufs_smmu {
     status = "okay";
