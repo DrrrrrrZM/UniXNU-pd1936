@@ -89,23 +89,23 @@ jobs:
           python3 device/scripts/prepare-pd1936-uefi.py \
             --uefi uefi-pd1936 --device device --tree UniXNU
 
-      - name: build the stand-in launchd
+      - name: build the stand-in launchd (dyld-linked comparison)
         run: |
           set -x
-          clang -target arm64-apple-macos11 -nostdlib -O2 -static \
+          # dynamic build: carries LC_LOAD_DYLINKER=/usr/lib/dyld and LC_LOAD_DYLIB libSystem
+          clang -target arm64-apple-macos11 -O2 \
                 -Wl,-e,_start -Wl,-platform_version,macos,11.0,11.0 \
-                -o /tmp/launchd-static device/src/hello.c \
-            || echo "static link failed, will fall back"
-          if [ -f /tmp/launchd-static ]; then
-            codesign -s - -f /tmp/launchd-static || true
-            cp /tmp/launchd-static /tmp/launchd
+                -o /tmp/launchd-dyn device/src/hello.c \
+            || echo "dynamic link failed"
+          if [ -f /tmp/launchd-dyn ]; then
+            codesign -s - -f /tmp/launchd-dyn || true
+            cp /tmp/launchd-dyn /tmp/launchd
           else
             cp device/src/launchd-aarch64 /tmp/launchd
           fi
           chmod +x /tmp/launchd
           file /tmp/launchd
-          otool -l /tmp/launchd | grep -E "LC_UNIXTHREAD|LC_LOAD_DYLINKER|LC_CODE_SIGNATURE|entryoff" -A2 || true
-          ls -l /tmp/launchd
+          otool -l /tmp/launchd | grep -E "LC_LOAD_DYLINKER|LC_LOAD_DYLIB|LC_UNIXTHREAD|LC_MAIN" -A2 || true
 
       - name: build an APFS seed containing /sbin/launchd
         run: |
