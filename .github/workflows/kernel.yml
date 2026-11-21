@@ -99,15 +99,16 @@ jobs:
 
       - name: build an APFS seed containing /sbin/launchd
         run: |
-          rm -f /tmp/seed.dmg device/seed-root.img
-          hdiutil create -size 128m -fs APFS -volname PD1936ROOT -format UDRW -o /tmp/seed.dmg
-          MP=$(hdiutil attach -nobrowse -readwrite /tmp/seed.dmg | tail -1 | awk -F'\t' '{print $NF}')
-          echo "mounted at $MP"
-          sudo mkdir -p "$MP/sbin"
-          sudo cp /tmp/launchd "$MP/sbin/launchd"
-          sudo chmod 755 "$MP/sbin/launchd"
-          ls -l "$MP/sbin"
-          hdiutil detach "$MP"
+          rm -rf /tmp/root /tmp/seed.dmg device/seed-root.img
+          mkdir -p /tmp/root/sbin
+          cp /tmp/launchd /tmp/root/sbin/launchd
+          chmod 755 /tmp/root/sbin/launchd
+          ls -l /tmp/root/sbin
+          # -srcfolder lets hdiutil write the tree into the volume; -format UDRW keeps the
+          # result a raw disk image, which is what the kernel's RAM disk driver expects.
+          hdiutil create -size 128m -fs APFS -volname PD1936ROOT \
+              -srcfolder /tmp/root -format UDRW /tmp/seed
+          ls -l /tmp/seed.dmg
           cp /tmp/seed.dmg device/seed-root.img
           ls -l device/seed-root.img
 
