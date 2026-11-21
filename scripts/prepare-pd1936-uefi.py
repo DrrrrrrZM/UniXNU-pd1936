@@ -43,6 +43,45 @@ pd1936_DEC = """\
   PACKAGE_NAME                   = pd1936Pkg
   PACKAGE_GUID                   = 9D2E6F20-1936-4B10-A855-001936100001
   PACKAGE_VERSION                = 0.1
+
+[Guids]
+  gVendor0FD9697423AA4CDCB9CB98D17750322A = { 0x0fd96974, 0x23aa, 0x4cdc, { 0xb9, 0xcb, 0x98, 0xd1, 0x77, 0x50, 0x32, 0x2a } }
+  gVendor157A5C4521B243C5BA7C822FEE5FE599 = { 0x157a5c45, 0x21b2, 0x43c5, { 0xba, 0x7c, 0x82, 0x2f, 0xee, 0x5f, 0xe5, 0x99 } }
+  gVendor18A031ABB4434D1AA5C00C09261E9F71 = { 0x18a031ab, 0xb443, 0x4d1a, { 0xa5, 0xc0, 0x0c, 0x09, 0x26, 0x1e, 0x9f, 0x71 } }
+  gVendor1DA97072BDDC4B3099F172A0B56FFF2A = { 0x1da97072, 0xbddc, 0x4b30, { 0x99, 0xf1, 0x72, 0xa0, 0xb5, 0x6f, 0xff, 0x2a } }
+  gVendor1E5668E2848111D4BCF10080C73C8881 = { 0x1e5668e2, 0x8481, 0x11d4, { 0xbc, 0xf1, 0x00, 0x80, 0xc7, 0x3c, 0x88, 0x81 } }
+  gVendor241AFAE6885F4F6CA7EAC28EAB79C3E5 = { 0x241afae6, 0x885f, 0x4f6c, { 0xa7, 0xea, 0xc2, 0x8e, 0xab, 0x79, 0xc3, 0xe5 } }
+  gVendor26BACCB16F4211D4BCE70080C73C8881 = { 0x26baccb1, 0x6f42, 0x11d4, { 0xbc, 0xe7, 0x00, 0x80, 0xc7, 0x3c, 0x88, 0x81 } }
+  gVendor26BACCB26F4211D4BCE70080C73C8881 = { 0x26baccb2, 0x6f42, 0x11d4, { 0xbc, 0xe7, 0x00, 0x80, 0xc7, 0x3c, 0x88, 0x81 } }
+  gVendor26BACCB36F4211D4BCE70080C73C8881 = { 0x26baccb3, 0x6f42, 0x11d4, { 0xbc, 0xe7, 0x00, 0x80, 0xc7, 0x3c, 0x88, 0x81 } }
+  gVendor27CFAC8746CC11D49A380090273FC14D = { 0x27cfac87, 0x46cc, 0x11d4, { 0x9a, 0x38, 0x00, 0x90, 0x27, 0x3f, 0xc1, 0x4d } }
+  gVendor27CFAC8846CC11D49A380090273FC14D = { 0x27cfac88, 0x46cc, 0x11d4, { 0x9a, 0x38, 0x00, 0x90, 0x27, 0x3f, 0xc1, 0x4d } }
+  gVendor2890B3EA053D1643AD0CD64808DA3FF1 = { 0x2890b3ea, 0x053d, 0x1643, { 0xad, 0x0c, 0xd6, 0x48, 0x08, 0xda, 0x3f, 0xf1 } }
+  gVendor387477C169C711D28E3900A0C969723B = { 0x387477c1, 0x69c7, 0x11d2, { 0x8e, 0x39, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b } }
+  gVendor47861DFF556F42699B28062EC3ECB30D = { 0x47861dff, 0x556f, 0x4269, { 0x9b, 0x28, 0x06, 0x2e, 0xc3, 0xec, 0xb3, 0x0d } }
+  gVendor587E72D7CC504F798209CA291FC1A10F = { 0x587e72d7, 0xcc50, 0x4f79, { 0x82, 0x09, 0xca, 0x29, 0x1f, 0xc1, 0xa1, 0x0f } }
+  gVendor5BEF7C41A560435B835B3C3EBF2BD151 = { 0x5bef7c41, 0xa560, 0x435b, { 0x83, 0x5b, 0x3c, 0x3e, 0xbf, 0x2b, 0xd1, 0x51 } }
+  gVendor60759B13A8BF46FEB7E6797BFB335DF3 = { 0x60759b13, 0xa8bf, 0x46fe, { 0xb7, 0xe6, 0x79, 0x7b, 0xfb, 0x33, 0x5d, 0xf3 } }
+  gVendor6441F81863624E44B5707DBA31DD2453 = { 0x6441f818, 0x6362, 0x4e44, { 0xb5, 0x70, 0x7d, 0xba, 0x31, 0xdd, 0x24, 0x53 } }
+  gVendor665E3FF546CC11D49A380090273FC14D = { 0x665e3ff5, 0x46cc, 0x11d4, { 0x9a, 0x38, 0x00, 0x90, 0x27, 0x3f, 0xc1, 0x4d } }
+  gVendor665E3FF646CC11D49A380090273FC14D = { 0x665e3ff6, 0x46cc, 0x11d4, { 0x9a, 0x38, 0x00, 0x90, 0x27, 0x3f, 0xc1, 0x4d } }
+  gVendor76B95DAD1E664D989CE7B294D9596895 = { 0x76b95dad, 0x1e66, 0x4d98, { 0x9c, 0xe7, 0xb2, 0x94, 0xd9, 0x59, 0x68, 0x95 } }
+  gVendor862129360E7641C8A03A2AF2FC1C39E2 = { 0x86212936, 0x0e76, 0x41c8, { 0xa0, 0x3a, 0x2a, 0xf2, 0xfc, 0x1c, 0x39, 0xe2 } }
+  gVendor964E5B21645911D28E3900A0C969723B = { 0x964e5b21, 0x6459, 0x11d2, { 0x8e, 0x39, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b } }
+  gVendor9BA45B66EFA4441CA3E4ED2224786BE2 = { 0x9ba45b66, 0xefa4, 0x441c, { 0xa3, 0xe4, 0xed, 0x22, 0x24, 0x78, 0x6b, 0xe2 } }
+  gVendor9E61DE7C99274F289F3D320705D81801 = { 0x9e61de7c, 0x9927, 0x4f28, { 0x9f, 0x3d, 0x32, 0x07, 0x05, 0xd8, 0x18, 0x01 } }
+  gVendorA46423E3461749F1B9FFD1BFA9115839 = { 0xa46423e3, 0x4617, 0x49f1, { 0xb9, 0xff, 0xd1, 0xbf, 0xa9, 0x11, 0x58, 0x39 } }
+  gVendorA966CC4FEE6C424DA7628ED3B5A4A501 = { 0xa966cc4f, 0xee6c, 0x424d, { 0xa7, 0x62, 0x8e, 0xd3, 0xb5, 0xa4, 0xa5, 0x01 } }
+  gVendorAD9AEC187BF048099E963012309F3DF7 = { 0xad9aec18, 0x7bf0, 0x4809, { 0x9e, 0x96, 0x30, 0x12, 0x30, 0x9f, 0x3d, 0xf7 } }
+  gVendorAE37B942457F4C91A196D9669FD347A3 = { 0xae37b942, 0x457f, 0x4c91, { 0xa1, 0x96, 0xd9, 0x66, 0x9f, 0xd3, 0x47, 0xa3 } }
+  gVendorB0760469970C487AA4B528DB7B45CEF1 = { 0xb0760469, 0x970c, 0x487a, { 0xa4, 0xb5, 0x28, 0xdb, 0x7b, 0x45, 0xce, 0xf1 } }
+  gVendorB27AE8B13E104D07AB5CEB9A6DC6FA8F = { 0xb27ae8b1, 0x3e10, 0x4d07, { 0xab, 0x5c, 0xeb, 0x9a, 0x6d, 0xc6, 0xfa, 0x8f } }
+  gVendorB7DFB4E1052F449F87BE9818FC91B733 = { 0xb7dfb4e1, 0x052f, 0x449f, { 0x87, 0xbe, 0x98, 0x18, 0xfc, 0x91, 0xb7, 0x33 } }
+  gVendorC1BFF82D6C9248FB8355C7FB4218A4EA = { 0xc1bff82d, 0x6c92, 0x48fb, { 0x83, 0x55, 0xc7, 0xfb, 0x42, 0x18, 0xa4, 0xea } }
+  gVendorEB97088ECFDF49C6BE4BD906A5B20E86 = { 0xeb97088e, 0xcfdf, 0x49c6, { 0xbe, 0x4b, 0xd9, 0x06, 0xa5, 0xb2, 0x0e, 0x86 } }
+  gVendorEF9FC172A1B24693B3276D32FC416042 = { 0xef9fc172, 0xa1b2, 0x4693, { 0xb3, 0x27, 0x6d, 0x32, 0xfc, 0x41, 0x60, 0x42 } }
+  gVendorF4E5C7D0D23947CBAACD7F66EF763238 = { 0xf4e5c7d0, 0xd239, 0x47cb, { 0xaa, 0xcd, 0x7f, 0x66, 0xef, 0x76, 0x32, 0x38 } }
+  gVendorFA5F306BF47D4AC4A47D882F8204EC30 = { 0xfa5f306b, 0xf47d, 0x4ac4, { 0xa4, 0x7d, 0x88, 0x2f, 0x82, 0x04, 0xec, 0x30 } }
 """
 
 pd1936_DSC = """\
@@ -102,6 +141,8 @@ pd1936_DSC = """\
   UniXNULib|UniXNUPkg/Library/UniXNULib/UniXNULib.inf
   FdtLib|MdePkg/Library/BaseFdtLib/BaseFdtLib.inf
 
+  NonDiscoverableDeviceRegistrationLib|MdeModulePkg/Library/NonDiscoverableDeviceRegistrationLib/NonDiscoverableDeviceRegistrationLib.inf
+
 [Components]
   UniXNUPkg/Application/UniXNU/UniXNU.inf
   UniXNUPkg/Driver/UniXNUDxe/UniXNUDxe.inf
@@ -109,6 +150,20 @@ pd1936_DSC = """\
   UniXNUPkg/Driver/UniXNURamDiskDxe/UniXNURamDiskDxe.inf
   shengPkg/Drivers/ShengKeyInputDxe/ShengKeyInputDxe.inf
   DarwinBootPkg/Driver/DarwinBoot.inf
+  pd1936Pkg/Driver/HandoffDumpDxe/HandoffDumpDxe.inf
+  pd1936Pkg/Driver/WdtOffDxe/WdtOffDxe.inf
+  pd1936Pkg/Driver/GopInfoDxe/GopInfoDxe.inf
+  pd1936Pkg/Driver/Lz4DiskDxe/Lz4DiskDxe.inf
+  pd1936Pkg/Driver/ShimFindDxe/ShimFindDxe.inf
+  pd1936Pkg/Driver/ScmShmDxe/ScmShmDxe.inf
+  pd1936Pkg/Driver/ScmTryDxe/ScmTryDxe.inf
+  pd1936Pkg/Driver/ScmScanDxe/ScmScanDxe.inf
+  pd1936Pkg/Driver/UsbHostDxe/UsbHostDxe.inf
+  MdeModulePkg/Bus/Pci/NonDiscoverablePciDeviceDxe/NonDiscoverablePciDeviceDxe.inf
+  MdeModulePkg/Bus/Pci/XhciDxe/XhciDxe.inf
+  MdeModulePkg/Bus/Usb/UsbBusDxe/UsbBusDxe.inf
+  MdeModulePkg/Bus/Usb/UsbMassStorageDxe/UsbMassStorageDxe.inf
+  pd1936Pkg/Driver/ExtStorageProbeDxe/ExtStorageProbeDxe.inf
 """
 
 pd1936_FDF = """\
@@ -246,6 +301,22 @@ pd1936_DXE = """\
   INF ArmPkg/Drivers/ArmGicDxe/ArmGicDxe.inf
   INF ArmPkg/Drivers/TimerDxe/TimerDxe.inf
   INF MdeModulePkg/Universal/DevicePathDxe/DevicePathDxe.inf
+  INF pd1936Pkg/Driver/HandoffDumpDxe/HandoffDumpDxe.inf
+  INF pd1936Pkg/Driver/WdtOffDxe/WdtOffDxe.inf
+  INF pd1936Pkg/Driver/GopInfoDxe/GopInfoDxe.inf
+  INF pd1936Pkg/Driver/Lz4DiskDxe/Lz4DiskDxe.inf
+  INF pd1936Pkg/Driver/ShimFindDxe/ShimFindDxe.inf
+  INF pd1936Pkg/Driver/ScmShmDxe/ScmShmDxe.inf
+  INF pd1936Pkg/Driver/ScmTryDxe/ScmTryDxe.inf
+  INF pd1936Pkg/Driver/ScmScanDxe/ScmScanDxe.inf
+  INF pd1936Pkg/Driver/UsbHostDxe/UsbHostDxe.inf
+  INF MdeModulePkg/Bus/Pci/NonDiscoverablePciDeviceDxe/NonDiscoverablePciDeviceDxe.inf
+  INF MdeModulePkg/Bus/Pci/XhciDxe/XhciDxe.inf
+  INF MdeModulePkg/Bus/Usb/UsbBusDxe/UsbBusDxe.inf
+  INF MdeModulePkg/Bus/Usb/UsbKbDxe/UsbKbDxe.inf
+  INF MdeModulePkg/Bus/Usb/UsbMassStorageDxe/UsbMassStorageDxe.inf
+  INF pd1936Pkg/Driver/ExtStorageProbeDxe/ExtStorageProbeDxe.inf
+  # bring-up: one SCSI READ(10) on LUN0
 
   INF shengPkg/Drivers/ShengBootMemoryDxe/ShengBootMemoryDxe.inf
   INF UniXNUPkg/Driver/UniXNURamDiskDxe/UniXNURamDiskDxe.inf
@@ -264,9 +335,6 @@ pd1936_DXE = """\
   INF MdeModulePkg/Universal/Console/GraphicsConsoleDxe/GraphicsConsoleDxe.inf
   INF SiliciumPkg/Drivers/SimpleFbDxe/SimpleFbDxe.inf
 
-  INF MdeModulePkg/Bus/Usb/UsbBusDxe/UsbBusDxe.inf
-  INF MdeModulePkg/Bus/Usb/UsbKbDxe/UsbKbDxe.inf
-  INF MdeModulePkg/Bus/Usb/UsbMassStorageDxe/UsbMassStorageDxe.inf
 """
 
 MEMORY_MAP_INF = """\
@@ -302,7 +370,8 @@ gMemoryDescriptor[] = {
   // DDR Regions - measured from /proc/iomem (9 System RAM ranges) and the
   // xbl.elf memory map. Contiguous and non-overlapping; every entry ends where
   // the next begins so ValidateMemoryMap() in MemoryInitPeiLib is satisfied.
-  {"RAM 0x8000",         0x80000000, 0x05700000, AddMem, SYS_MEM, SYS_MEM_CAP, Conv,   WRITE_BACK_XN},
+  {"Payload RAM",        0x80000000, 0x04B00000, AddMem, MEM_RES, SYS_MEM_CAP, Reserv, WRITE_BACK_XN},
+  {"RAM 0x84B0",         0x84B00000, 0x00C00000, AddMem, SYS_MEM, SYS_MEM_CAP, Conv,   WRITE_BACK_XN},
   {"HYP",                0x85700000, 0x00600000, AddMem, SYS_MEM, SYS_MEM_CAP, Reserv, NS_DEVICE},
   {"RAM 0x85D0",         0x85D00000, 0x00100000, AddMem, SYS_MEM, SYS_MEM_CAP, Conv,   WRITE_BACK_XN},
   {"XBL_AOP",            0x85E00000, 0x00120000, AddMem, MEM_RES, WRITE_COMBINEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
@@ -331,9 +400,13 @@ gMemoryDescriptor[] = {
   {"MLVM_1",             0xA8800000, 0x07C00000, AddMem, MEM_RES, SYS_MEM_CAP, Reserv, WRITE_BACK_XN},
   {"MLVM",               0xB0400000, 0x09000000, AddMem, MEM_RES, SYS_MEM_CAP, Reserv, WRITE_BACK_XN},
   {"RAM 0xB940",         0xB9400000, 0x02700000, AddMem, SYS_MEM, SYS_MEM_CAP, Conv,   WRITE_BACK_XN},
-  {"DXE Heap Low",       0xC0000000, 0x03500000, AddMem, SYS_MEM, SYS_MEM_CAP, Conv,   WRITE_BACK_XN},
-  {"RAM 0xC350",         0xC3500000, 0x3C806000, AddMem, SYS_MEM, SYS_MEM_CAP, Conv,   WRITE_BACK_XN},
-  {"RAM High",           0x100000000,0x180000000, AddMem, SYS_MEM, SYS_MEM_CAP, Conv,   WRITE_BACK_XN},
+  // Reserved for the payload volume appended to the kernel field (embed_payload):
+  // BootShim copies it to 0xC0000000, so the firmware can mount the FAT volume from
+  // a fixed address and ramdisk_size stays 0.
+  {"Payload",            0xC0000000, 0x04B00000, AddMem, MEM_RES, SYS_MEM_CAP, Reserv, WRITE_BACK_XN},
+  {"RAM 0xC4B0",         0xC4B00000, 0x3B206000, AddMem, SYS_MEM, SYS_MEM_CAP, Conv,   WRITE_BACK_XN},
+  {"Payload High",       0x100000000,0x00C800000, AddMem, MEM_RES, SYS_MEM_CAP, Reserv, WRITE_BACK_XN},
+  {"RAM High",           0x10C800000,0x173800000, AddMem, SYS_MEM, SYS_MEM_CAP, Conv,   WRITE_BACK_XN},
 
   // Other Memory Regions
   {"IMEM Base",          0x14680000, 0x00040000, NoHob,  MMAP_IO, INITIALIZED, Conv,   NS_DEVICE},
@@ -522,6 +595,119 @@ def main() -> int:
         write_text(pkg_dir / "pd1936.fdf", pd1936_FDF)
         write_text(pkg_dir / "Include" / "APRIORI.inc", pd1936_APRIORI)
         write_text(pkg_dir / "Include" / "DXE.inc", pd1936_DXE)
+
+        bootinfo_src = Path(__file__).resolve().parents[1] / "uefi-image" / "drivers" / "BootInfoDumpDxe"
+        if bootinfo_src.is_dir():
+            dst = pkg_dir / "Driver" / "BootInfoDumpDxe"
+            dst.mkdir(parents=True, exist_ok=True)
+            for item in bootinfo_src.iterdir():
+                if item.is_file():
+                    shutil.copy2(item, dst / item.name)
+
+        handoff_src = Path(__file__).resolve().parents[1] / "uefi-image" / "drivers" / "HandoffDumpDxe"
+        if handoff_src.is_dir():
+            dst = pkg_dir / "Driver" / "HandoffDumpDxe"
+            dst.mkdir(parents=True, exist_ok=True)
+            for item in handoff_src.iterdir():
+                if item.is_file():
+                    shutil.copy2(item, dst / item.name)
+
+        wdtoff_src = Path(__file__).resolve().parents[1] / "uefi-image" / "drivers" / "WdtOffDxe"
+        if wdtoff_src.is_dir():
+            dst = pkg_dir / "Driver" / "WdtOffDxe"
+            dst.mkdir(parents=True, exist_ok=True)
+            for item in wdtoff_src.iterdir():
+                if item.is_file():
+                    shutil.copy2(item, dst / item.name)
+
+        gopinfo_src = Path(__file__).resolve().parents[1] / "uefi-image" / "drivers" / "GopInfoDxe"
+        if gopinfo_src.is_dir():
+            dst = pkg_dir / "Driver" / "GopInfoDxe"
+            dst.mkdir(parents=True, exist_ok=True)
+            for item in gopinfo_src.iterdir():
+                if item.is_file():
+                    shutil.copy2(item, dst / item.name)
+
+        lz4disk_src = Path(__file__).resolve().parents[1] / "uefi-image" / "drivers" / "Lz4DiskDxe"
+        if lz4disk_src.is_dir():
+            dst = pkg_dir / "Driver" / "Lz4DiskDxe"
+            dst.mkdir(parents=True, exist_ok=True)
+            for item in lz4disk_src.iterdir():
+                if item.is_file():
+                    shutil.copy2(item, dst / item.name)
+
+        shimfind_src = Path(__file__).resolve().parents[1] / "uefi-image" / "drivers" / "ShimFindDxe"
+        if shimfind_src.is_dir():
+            dst = pkg_dir / "Driver" / "ShimFindDxe"
+            dst.mkdir(parents=True, exist_ok=True)
+            for item in shimfind_src.iterdir():
+                if item.is_file():
+                    shutil.copy2(item, dst / item.name)
+
+        scmshm_src = Path(__file__).resolve().parents[1] / "uefi-image" / "drivers" / "ScmShmDxe"
+        if scmshm_src.is_dir():
+            dst = pkg_dir / "Driver" / "ScmShmDxe"
+            dst.mkdir(parents=True, exist_ok=True)
+            for item in scmshm_src.iterdir():
+                if item.is_file():
+                    shutil.copy2(item, dst / item.name)
+
+        scmtry_src = Path(__file__).resolve().parents[1] / "uefi-image" / "drivers" / "ScmTryDxe"
+        if scmtry_src.is_dir():
+            dst = pkg_dir / "Driver" / "ScmTryDxe"
+            dst.mkdir(parents=True, exist_ok=True)
+            for item in scmtry_src.iterdir():
+                if item.is_file():
+                    shutil.copy2(item, dst / item.name)
+
+        scmscan_src = Path(__file__).resolve().parents[1] / "uefi-image" / "drivers" / "ScmScanDxe"
+        if scmscan_src.is_dir():
+            dst = pkg_dir / "Driver" / "ScmScanDxe"
+            dst.mkdir(parents=True, exist_ok=True)
+            for item in scmscan_src.iterdir():
+                if item.is_file():
+                    shutil.copy2(item, dst / item.name)
+
+        usbhost_src = Path(__file__).resolve().parents[1] / "uefi-image" / "drivers" / "UsbHostDxe"
+
+        extstor_src = Path(__file__).resolve().parents[1] / "uefi-image" / "drivers" / "ExtStorageProbeDxe"
+        if extstor_src.is_dir():
+            dst = pkg_dir / "Driver" / "ExtStorageProbeDxe"
+            dst.mkdir(parents=True, exist_ok=True)
+            for item in extstor_src.iterdir():
+                if item.is_file():
+                    shutil.copy2(item, dst / item.name)
+        if usbhost_src.is_dir():
+            dst = pkg_dir / "Driver" / "UsbHostDxe"
+            dst.mkdir(parents=True, exist_ok=True)
+            for item in usbhost_src.iterdir():
+                if item.is_file():
+                    shutil.copy2(item, dst / item.name)
+
+        vendor_platform = (Path(__file__).resolve().parents[1].parent
+                           / "vendor" / "iqoo-pd1936" / "platform")
+        if vendor_platform.is_dir():
+            for item in vendor_platform.iterdir():
+                if item.suffix.lower() in (".efi", ".inf"):
+                    dst = pkg_dir / "Driver" / "VendorQcom" / item.stem
+                    dst.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(item, dst / item.name)
+
+        vendor_efi = Path(__file__).resolve().parents[1].parent / "vendor" / "iqoo-pd1936" / "UFSDxe.efi"
+        if vendor_efi.is_file():
+            dst = pkg_dir / "Driver" / "VendorUfsDxe"
+            dst.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(vendor_efi, dst / "UFSDxe.efi")
+
+        driver_src = Path(__file__).resolve().parents[1] / "uefi-image" / "drivers" / "UfsReadDxe"
+        if driver_src.is_dir():
+            driver_dst = pkg_dir / "Driver" / "UfsReadDxe"
+            driver_dst.mkdir(parents=True, exist_ok=True)
+            for item in driver_src.iterdir():
+                if item.is_file():
+                    (driver_dst / item.name).write_text(
+                        item.read_text(encoding="utf-8"), encoding="utf-8")
+
         write_text(pkg_dir / "Library" / "MemoryMapLib" / "MemoryMapLib.inf", MEMORY_MAP_INF)
         write_text(pkg_dir / "Library" / "MemoryMapLib" / "MemoryMapLib.c", MEMORY_MAP_C)
         write_text(
