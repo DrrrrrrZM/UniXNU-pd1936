@@ -135,6 +135,20 @@ jobs:
           python3 UniXNU/unixnu build payload -D device --os "${{ inputs.os }}" --data-ramdisk device/seed-root.img
           python3 UniXNU/unixnu build firmware -D device --os "${{ inputs.os }}" --uefi uefi-pd1936
 
+      - name: dump the real xnu file list (temporary)
+        if: failure()
+        run: |
+          F=$(ls UniXNU/out/pd1936/*/*/tree/.cache/xnu-work/bsd/conf/files 2>/dev/null | head -1)
+          echo "DUMP path=$F"
+          if [ -n "$F" ]; then
+            echo "DUMP lines=$(wc -l < "$F")"
+            echo "DUMP head:"; sed -n '1,3p' "$F"
+            echo "DUMP tail:"; tail -n 2 "$F"
+          else
+            echo "DUMP not found"
+            find UniXNU/out/pd1936 -maxdepth 7 -name 'conf' -type d 2>/dev/null | head -5
+          fi
+
       - name: strip kernel symbols to fit the 36 MiB payload budget
         run: |
           K=$(ls UniXNU/out/pd1936/*/*/kernel/kernel.macho | head -1)
