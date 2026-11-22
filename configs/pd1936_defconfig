@@ -16,3 +16,5 @@ CONFIG_XNU_PSMI_SMC=y
 # Not present on this SoC / not selected yet
 # CONFIG_XNU_ARMVIRT_PLATFORM is not set
 # CONFIG_XNU_NATIVE_VIRTIO_BLOCK is not set
+# mockfs is not needed for the UFS bring-up
+CONFIG_XNU_SOURCE_MOCKFS=n
