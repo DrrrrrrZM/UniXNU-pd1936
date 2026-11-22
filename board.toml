@@ -53,7 +53,6 @@ archives = [
   "component:ArmCpu",
   "component:SoftwareAES",
   "build-software-aes-bindings.py",
-  "build-mockfs-fixture.py",
   "build-libpthread-kernel.py",
   "component:AppleKeyStoreState",
   # Strictly read-only SM8150 UFS probe: strips every write path from ShengUfs and
@@ -64,6 +63,7 @@ archives = [
   "component:VirtioMmioBlock",
   "component:VerifiedRoot",
   "component:RamBlock",
+  "build-mockfs-fixture.py",
   # Still to write:
   #   "build-pd1936-armcpu.py"        (ArmCpu source transform, see UniXNU-nabu)
 ]
