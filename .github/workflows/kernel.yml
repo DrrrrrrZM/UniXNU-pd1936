@@ -138,15 +138,19 @@ jobs:
       - name: dump the real xnu file list (temporary)
         if: failure()
         run: |
-          F=$(ls UniXNU/out/pd1936/*/*/tree/.cache/xnu-work/bsd/conf/files 2>/dev/null | head -1)
-          echo "DUMP path=$F"
+          echo "DUMP tree layout:"
+          ls UniXNU/out/pd1936/*/*/tree 2>/dev/null | head -12
+          echo "DUMP searching for bsd/conf/files:"
+          find UniXNU/out/pd1936 -path '*bsd/conf/files' 2>/dev/null | head -5
+          F=$(find UniXNU/out/pd1936 -path '*bsd/conf/files' 2>/dev/null | head -1)
           if [ -n "$F" ]; then
+            echo "DUMP path=$F"
             echo "DUMP lines=$(wc -l < "$F")"
             echo "DUMP head:"; sed -n '1,3p' "$F"
             echo "DUMP tail:"; tail -n 2 "$F"
           else
             echo "DUMP not found"
-            find UniXNU/out/pd1936 -maxdepth 7 -name 'conf' -type d 2>/dev/null | head -5
+            find UniXNU/out/pd1936 -maxdepth 6 -type d -name '.cache' 2>/dev/null | head -5
           fi
 
       - name: strip kernel symbols to fit the 36 MiB payload budget
