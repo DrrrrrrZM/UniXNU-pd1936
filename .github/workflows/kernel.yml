@@ -135,6 +135,21 @@ jobs:
           python3 UniXNU/unixnu build payload -D device --os "${{ inputs.os }}" --data-ramdisk device/seed-root.img
           python3 UniXNU/unixnu build firmware -D device --os "${{ inputs.os }}" --uefi uefi-pd1936
 
+      - name: show failure tail
+        if: failure()
+        run: |
+          LOGS=$(ls -d UniXNU/out/pd1936/*/*/logs 2>/dev/null | head -1)
+          echo "TAIL logs dir=$LOGS"
+          if [ -n "$LOGS" ]; then
+            for f in $(ls "$LOGS"/archive-*.log 2>/dev/null | tail -3) "$LOGS/kernel.log"; do
+              [ -f "$f" ] || continue
+              echo "===== TAIL $(basename "$f") ====="
+              tail -n 25 "$f"
+            done
+          else
+            echo "TAIL no logs dir"
+          fi
+
       - name: strip kernel symbols to fit the 36 MiB payload budget
         run: |
           K=$(ls UniXNU/out/pd1936/*/*/kernel/kernel.macho | head -1)
