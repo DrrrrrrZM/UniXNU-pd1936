@@ -62,7 +62,6 @@ archives = [
   "component:ShengUfs",
   "component:VirtioMmioBlock",
   "component:VerifiedRoot",
-  "build-verified-root-probe.py",
   "component:RamBlock",
   # Still to write:
   #   "build-pd1936-armcpu.py"        (ArmCpu source transform, see UniXNU-nabu)
