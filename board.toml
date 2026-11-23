@@ -25,7 +25,6 @@ include = [
   "RamBlock",
   "ShengUfs",
   "VirtioMmioBlock",
-  "VerifiedRoot",
 ]
 
 [kernel]
@@ -61,7 +60,6 @@ archives = [
   # LUNs and read blocks, so it is enough to reach the root volume; it cannot write.
   "component:ShengUfs",
   "component:VirtioMmioBlock",
-  "component:VerifiedRoot",
   "component:RamBlock",
   # Still to write:
   #   "build-pd1936-armcpu.py"        (ArmCpu source transform, see UniXNU-nabu)
