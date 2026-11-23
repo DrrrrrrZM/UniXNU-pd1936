@@ -140,15 +140,13 @@ jobs:
         run: |
           LOGS=$(ls -d UniXNU/out/pd1936/*/*/logs 2>/dev/null | head -1)
           echo "TAIL logs dir=$LOGS"
-          if [ -n "$LOGS" ]; then
-            for f in $(ls "$LOGS"/archive-*.log 2>/dev/null | tail -3) "$LOGS/kernel.log"; do
-              [ -f "$f" ] || continue
-              echo "===== TAIL $(basename "$f") ====="
-              tail -n 25 "$f"
-            done
-          else
-            echo "TAIL no logs dir"
-          fi
+          if [ -z "$LOGS" ]; then echo "TAIL no logs dir"; exit 0; fi
+          for f in $(ls "$LOGS"/*.log 2>/dev/null | tail -4); do
+            echo "===== TAIL $(basename "$f") size=$(wc -c < "$f" 2>/dev/null || echo 0) ====="
+            grep -a -iE 'error|undefined|failed|FATAL|cannot|No such' "$f" 2>/dev/null | tail -20 || true
+            echo "----- last 10 -----"
+            tail -n 10 "$f" 2>/dev/null || true
+          done
 
       - name: strip kernel symbols to fit the 36 MiB payload budget
         run: |
