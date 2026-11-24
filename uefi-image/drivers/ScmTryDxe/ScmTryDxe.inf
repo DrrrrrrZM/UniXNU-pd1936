@@ -1,0 +1,31 @@
+﻿## @file
+#  Zero-argument probes of the memory-protection / SMMU-program SCM calls.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = ScmTryDxe
+  FILE_GUID                      = 7A4C1E90-3B68-4D25-9F71-6C0A2D8B5E13
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = ScmTryDxeEntry
+
+[Sources]
+  ScmTryDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  BaseLib
+  ArmSmcLib
+  BaseMemoryLib
+  DebugLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+
+[Depex]
+  TRUE
