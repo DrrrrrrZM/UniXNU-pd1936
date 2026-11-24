@@ -61,6 +61,7 @@ archives = [
   "component:ShengUfs",
   "component:VirtioMmioBlock",
   "component:RamBlock",
+  "build-storage-bindings.py",
   # Still to write:
   #   "build-pd1936-armcpu.py"        (ArmCpu source transform, see UniXNU-nabu)
 ]
