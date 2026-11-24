@@ -23,7 +23,6 @@ include = [
   "XnuPrelink",
   "DarwinBoot",
   "RamBlock",
-  "ShengUfs",
   "VirtioMmioBlock",
 ]
 
