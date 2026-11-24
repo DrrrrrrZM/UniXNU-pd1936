@@ -1,0 +1,28 @@
+## @file
+#  Disarm the EFI watchdog before boot services end.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = WdtOffDxe
+  FILE_GUID                      = 7D14AE52-3C68-4B90-A2F1-59E7B03C6D28
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = WdtOffDxeEntry
+
+[Sources]
+  WdtOffDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  DebugLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+
+[Depex]
+  TRUE
