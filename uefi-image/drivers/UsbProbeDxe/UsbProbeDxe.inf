@@ -1,0 +1,35 @@
+﻿## @file
+#  Report UsbIo / BlockIo handle counts after the USB stack has bound.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = UsbProbeDxe
+  FILE_GUID                      = 8F2B6C41-9A3D-4E57-B1C8-7D5A2E93F016
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = UsbProbeDxeEntry
+
+[Sources]
+  UsbProbeDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  IoLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+
+[Protocols]
+  gEfiBlockIoProtocolGuid
+  gEfiUsbIoProtocolGuid
+
+[Depex]
+  TRUE
