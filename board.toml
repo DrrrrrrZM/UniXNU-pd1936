@@ -23,6 +23,7 @@ include = [
   "XnuPrelink",
   "DarwinBoot",
   "RamBlock",
+  "ShengUfs",
   "VirtioMmioBlock",
 ]
 
@@ -59,7 +60,6 @@ archives = [
   # LUNs and read blocks, so it is enough to reach the root volume; it cannot write.
   "component:ShengUfs",
   "build-pd1936-ufs-block.py",
-  "ShengUfs",
   "component:VirtioMmioBlock",
   "component:RamBlock",
   "build-storage-bindings.py",
