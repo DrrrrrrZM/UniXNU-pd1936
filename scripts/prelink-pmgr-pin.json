@@ -1,0 +1,33 @@
+{
+  "source": "kernel-art/kernel.macho (iPadOS 17.7.11 21H461)",
+  "original_executable_sha256": {
+    "com.apple.driver.AppleMobileFileIntegrity": "a1088aaa",
+    "com.apple.driver.ApplePMGR": "2c433279"
+  },
+  "kext_text": {
+    "va": "0xfffffff0049f0000",
+    "size": 272060,
+    "sha256": "2c433279d004803b7ef02948e550ad6b77aa3f84b02a06a357e00fa738310a99"
+  },
+  "applepmgr": {
+    "constructor": "0xfffffff0049f003c",
+    "destructor": "0xfffffff0049f019c",
+    "gmetaclass": "0xfffffff006adf490",
+    "gmetaclass_value": "0x0"
+  },
+  "applepmgrnub": {
+    "vtable": "0xfffffff005ce26d8",
+    "slot_320": "0xfffffff004a20fbc",
+    "slot_321": "0xfffffff004a20fc4",
+    "create": "0xfffffff004a22568",
+    "read": "0xfffffff004a24adc",
+    "write": "0xfffffff004a230ec",
+    "provider_field_offset": "0x88"
+  },
+  "iopmgr": {
+    "vtable": "0xfffffff0071bccf0",
+    "slot_320": "0xfffffff007833058",
+    "slot_321": "0xfffffff007833040"
+  },
+  "kernel_symtab_nsyms": 275707
+}
