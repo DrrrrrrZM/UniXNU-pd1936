@@ -1,15 +1,26 @@
 #!/usr/bin/env python3
-"""Build the ShengUfs archive with block-device publication kept and Verified Root disabled.
+"""Build ShengUfs with block-device publication kept and the Verified Root path compiled out.
 
-Upstream's build-arm-driver.py appends ``-DNATIVE_VERIFIED_BLOCK=1`` unconditionally for the NativeUfs
-component, which drags in the verification path and therefore the symbols
-``_vr_open`` / ``_vr_verify_block`` / ``_vr_xnu_crypto`` / ``_verified_root_*`` /
-``_boot_progress_poll``. That flag is not reachable from board.toml, so this script compiles the same
-sources itself with the exact compile record XNU emitted, forcing the macro off.
+Upstream's build-arm-driver.py passes ``-DNATIVE_VERIFIED_BLOCK=1`` unconditionally for NativeUfs, so the
+verification path is always compiled. Turning that macro off alone is not enough, because
+``Operations::read()`` is compiled unconditionally while the symbols it uses (``timerTicks`` and
+``native_ufs_read_ticks``) are defined inside the ``#if NATIVE_VERIFIED_BLOCK`` block:
 
-What stays: NativeUfsBlock and its IOKit publication path, so UFS can still be published as a block
-device. What goes: the authenticated-root code path, which is disabled by build policy rather than
-faked with stubs.
+    IOReturn read (uint64_t lba, uint32_t blocks, void *out) {
+      uint64_t t0 = timerTicks ();                                   <- unconditional
+      IOReturn r = hostRead4k (0, lba, blocks, out);
+      __atomic_fetch_add (&native_ufs_read_ticks, timerTicks () - t0, ...);
+      return r;
+    }
+
+so this script wraps that body and keeps a plain read in the ``#else`` branch.
+
+The sources come from the fetched feed directory rather than from a single file, because NativeUfs.cpp
+includes RootCommands.h / RootQueue.h / RootLayout.h / RootWindowRead.h / RootPublication.h in the middle
+of the file (line ~914-1225), and ``hostRead4k`` is declared in RootCommands.h. ``tests/`` is skipped: its
+own RootLayout.cpp defines a second ``static hostRead4k`` that would collide.
+
+Disabled by build policy, not stubbed: nothing here returns a fake success for a verification call.
 """
 from __future__ import annotations
 
@@ -22,27 +33,41 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RECIPE = ROOT / "build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/iokit/DEVELOPMENT/IOPlatformExpert.cpo.json"
-def _default_source() -> Path:
-    """Prefer the tree copy; fall back to the fetched feed, which survives without the component."""
-    component_copy = ROOT / "build/sheng-ufs/source"
-    if component_copy.is_dir():
-        return component_copy
-    tree_copy = ROOT / "drivers/ShengUfs"
-    if tree_copy.is_dir():
-        return tree_copy
-    candidates = sorted((ROOT.parents[3] / "feeds").glob("ShengUfs-*"))
-    return candidates[-1] if candidates else tree_copy
 
+READ_OLD = """    IOReturn read (uint64_t lba, uint32_t blocks, void *out) {
+      uint64_t t0 = timerTicks ();
+      IOReturn r = hostRead4k (0, lba, blocks, out);
+      __atomic_fetch_add (&native_ufs_read_ticks, timerTicks () - t0, __ATOMIC_RELAXED);
+      return r;
+    }"""
 
-SOURCE = _default_source()
+READ_NEW = """    IOReturn read (uint64_t lba, uint32_t blocks, void *out) {
+#if defined(NATIVE_VERIFIED_BLOCK) && NATIVE_VERIFIED_BLOCK
+      uint64_t t0 = timerTicks ();
+      IOReturn r = hostRead4k (0, lba, blocks, out);
+      __atomic_fetch_add (&native_ufs_read_ticks, timerTicks () - t0, __ATOMIC_RELAXED);
+      return r;
+#else
+      return hostRead4k (0, lba, blocks, out);
+#endif
+    }"""
 
 
 def fail(message: str) -> "None":
     raise SystemExit("build-pd1936-ufs-block: " + message)
 
 
+def default_source() -> Path:
+    """The fetched feed holds the whole source set; fall back to the tree copy."""
+    feeds = ROOT.parents[3] / "feeds"
+    candidates = sorted(feeds.glob("ShengUfs-*"))
+    if candidates:
+        return candidates[-1]
+    return ROOT / "drivers/ShengUfs"
+
+
 def base_command(record: dict) -> list[str]:
-    """Strip the recorded input, output and warning-related flags from the compile recipe."""
+    """Strip the recorded input/output, warning flags and any verification macro definition."""
     command: list[str] = []
     arguments = record["arguments"]
     index = 0
@@ -50,16 +75,12 @@ def base_command(record: dict) -> list[str]:
         value = arguments[index]
         if value == record["file"]:
             index += 1
-        elif value == "-o":
+        elif value in ("-o", "-MF", "-MJ"):
             index += 2
-        elif value in ("-MF", "-MJ"):
-            index += 2
-        elif value in ("-MD", "-MP"):
-            index += 1
+        elif value in ("-MD", "-MP", "-Xlinker", "-Xclang"):
+            index += 2 if value.startswith("-X") else 1
         elif value.startswith(("-DNATIVE_VERIFIED_BLOCK", "-W", "-mlinker-version=", "-Wl,", "-fuse-ld=")):
             index += 1
-        elif value in ("-Xlinker", "-Xclang"):
-            index += 2
         else:
             command.append(value)
             index += 1
@@ -69,59 +90,69 @@ def base_command(record: dict) -> list[str]:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--source", type=Path, default=SOURCE)
-    ap.add_argument("--out", type=Path, default=ROOT / "build/sheng-ufs-block")
+    ap.add_argument("--source", type=Path, default=None)
+    ap.add_argument("--out", type=Path, default=ROOT / "build/sheng-ufs")
     args = ap.parse_args()
 
+    source = args.source or default_source()
+    if not (source / "NativeUfs.cpp").is_file():
+        fail(str(source) + " has no NativeUfs.cpp")
     if not RECIPE.is_file():
         fail(str(RECIPE) + " missing; run the kernel bootstrap pass once")
-    if not args.source.is_dir():
-        fail(str(args.source) + " missing")
 
     record = json.loads(RECIPE.read_text().strip().rstrip(","))
-    args.out.mkdir(parents=True, exist_ok=True)
     staged = args.out / "source"
     if staged.exists():
         shutil.rmtree(staged)
-    shutil.copytree(args.source, staged)
+    staged.mkdir(parents=True)
 
-    sources = sorted(staged.glob("*.cpp"))
-    if not sources:
-        fail("no .cpp sources under " + str(staged))
+    headers_copied = 0
+    for item in source.iterdir():
+        if item.name == "tests":
+            continue
+        if item.is_file():
+            shutil.copy2(item, staged / item.name)
+            if item.suffix == ".h":
+                headers_copied += 1
+        elif item.is_dir():
+            shutil.copytree(item, staged / item.name)
+
+    target = staged / "NativeUfs.cpp"
+    text = target.read_text(encoding="utf-8")
+    if READ_OLD not in text:
+        fail("read() anchor not found; the pinned source changed")
+    target.write_text(text.replace(READ_OLD, READ_NEW, 1), encoding="utf-8")
+    print("  sources: %s (%d headers)" % (source.name, headers_copied))
+    print("  read() guarded; verification path excluded")
 
     include = ["-I", str(staged),
-               "-I", str(ROOT / "build/sheng-ufs"),
-               "-I", str(ROOT / "build/sheng-ufs/source"),
                "-I", str(ROOT / "build/storage-abi/include"),
                "-I", str(ROOT / "drivers/VirtioMmioBlock"),
                "-I", str(ROOT / ".cache/xnu-work/osfmk")]
     defines = ["-DNATIVE_UFS_SOURCE_API=1",
-               "-DNATIVE_VERIFIED_BLOCK=0",          # build policy: no verified root path
-               "-DPD1936_UFS_NO_VERIFY=1",
-               "-Wno-error"]
+               "-DNATIVE_VERIFIED_BLOCK=0",
+               "-DPD1936_UFS_NO_VERIFY=1"]
 
     objects = []
-    for src in sources:
+    for src in sorted(staged.glob("*.cpp")):
         obj = args.out / (src.stem + ".o")
         command = base_command(record) + include + defines + ["-o", str(obj), str(src)]
         (args.out / (src.stem + ".compile.json")).write_text(json.dumps(command, indent=2) + "\n")
         result = subprocess.run(command, cwd=record["directory"], capture_output=True, text=True)
-        (args.out / (src.stem + ".log")).write_text((result.stdout or "") + (result.stderr or ""))
+        output = (result.stdout or "") + (result.stderr or "")
+        (args.out / (src.stem + ".log")).write_text(output)
         if result.returncode:
-            text = (result.stdout or "") + (result.stderr or "")
-            errors = [ln for ln in text.splitlines() if "error:" in ln or "fatal error:" in ln]
+            errors = [ln for ln in output.splitlines() if "error:" in ln or "fatal error:" in ln]
             sys.stderr.write("\n".join(errors[:20]) + "\n")
             if not errors:
-                sys.stderr.write(text[-2000:] + "\n")
+                sys.stderr.write(output[-2000:] + "\n")
             fail(src.name + " did not compile")
         objects.append(obj)
 
-    archive = ROOT / "build/sheng-ufs/libShengUfs.a"  # overwrite the component archive
+    archive = args.out / "libShengUfs.a"
     archive.unlink(missing_ok=True)
     subprocess.run(["xcrun", "ar", "rcs", str(archive)] + [str(o) for o in objects], check=True)
-    print("  compiled " + str(len(objects)) + " object(s)")
-    print("  archive " + str(archive) + " (" + str(archive.stat().st_size) + " bytes)")
-    print("  NATIVE_VERIFIED_BLOCK=0: verification path excluded by build policy")
+    print("  compiled %d object(s) -> %s (%d bytes)" % (len(objects), archive, archive.stat().st_size))
     return 0
 
 
