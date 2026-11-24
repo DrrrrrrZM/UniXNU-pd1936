@@ -105,7 +105,7 @@ def main() -> int:
             fail(src.name + " did not compile")
         objects.append(obj)
 
-    archive = ROOT / "build/sheng-ufs-block/libShengUfs.a"
+    archive = ROOT / "build/sheng-ufs/libShengUfs.a"  # overwrite the component archive
     archive.unlink(missing_ok=True)
     subprocess.run(["xcrun", "ar", "rcs", str(archive)] + [str(o) for o in objects], check=True)
     print("  compiled " + str(len(objects)) + " object(s)")
