@@ -1,0 +1,31 @@
+﻿## @file
+#  SPMI arbiter probe: APID lookup + read-opcode discovery. Read only.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = SpmiProbeDxe
+  FILE_GUID                      = 5B7E2A14-8C63-4D92-AF07-3E61B5C0D824
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = SpmiProbeDxeEntry
+
+[Sources]
+  SpmiProbeDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  IoLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+
+[Depex]
+  TRUE
