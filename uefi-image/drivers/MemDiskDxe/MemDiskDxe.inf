@@ -1,0 +1,35 @@
+﻿## @file
+#  Publish the payload riding behind the UEFI FD as a block device so PartitionDxe/Fat can mount it.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = MemDiskDxe
+  FILE_GUID                      = 5E29C4B7-1A68-4D93-8F25-6B7E0C91D384
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = MemDiskDxeEntry
+
+[Sources]
+  MemDiskDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  IoLib
+  MemoryAllocationLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+
+[Protocols]
+  gEfiBlockIoProtocolGuid
+
+[Depex]
+  TRUE
