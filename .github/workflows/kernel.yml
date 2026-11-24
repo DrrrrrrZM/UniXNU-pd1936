@@ -162,6 +162,15 @@ jobs:
           fi
           ls -l "$K"
 
+      - name: rebuild the payload with the stripped kernel
+        env:
+          UNIXNU_UNIQUE_CHIP_ID: ${{ secrets.UNIXNU_UNIQUE_CHIP_ID }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 UniXNU/unixnu build payload -D device --os "${{ inputs.os }}" --data-ramdisk device/seed-root.img
+          P=$(ls UniXNU/out/pd1936/*/*/payload/payload.img | head -1)
+          echo "payload after strip: $(stat -f%z "$P") bytes"
+
       - name: report the payload for local packaging
         run: |
           PAYLOAD=$(ls UniXNU/out/pd1936/*/*/payload/payload.img | head -1)
