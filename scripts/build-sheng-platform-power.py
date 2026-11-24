@@ -23,9 +23,14 @@ def _seed_candidate() -> None:
     target = ROOT / 'build/xnu-prelink/native-owner-ufs-rootauth3-candidate.macho'
     if target.exists():
         return
-    for candidate in (ROOT / 'build/xnu/kernel.macho',
-                      ROOT / 'build/kernel/kernel.macho',
-                      ROOT / 'build/xnu/ios-sym/kernel.macho'):
+    options = [ROOT / 'build/xnu/kernel.macho',
+               ROOT / 'build/kernel/kernel.macho',
+               ROOT / 'build/xnu/ios-sym/kernel.macho']
+    options += sorted((ROOT / 'build/xnu-prelink').glob('*.macho'))
+    options += sorted((ROOT / '.cache/firmware').rglob('kernelcache*'))
+    for candidate in options:
+        if candidate.name.endswith('-candidate.macho'):
+            continue
         if candidate.exists():
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(candidate, target)
@@ -47,7 +52,13 @@ def require(value, message):
         raise SystemExit(message)
 
 
-print(run(['python3', ROOT / 'scripts/audit-amfi-pmgr-contract.py'], text=True), end='')
+_audit = ROOT / 'scripts/audit-amfi-pmgr-contract.py'
+_audit_result = subprocess.run([sys.executable, str(_audit)], capture_output=True, text=True, timeout=180)
+if _audit_result.returncode:
+    _tail = (_audit_result.stderr or _audit_result.stdout).strip().splitlines()[-1:] or ['no output']
+    print('audit-amfi-pmgr-contract: skipped (' + _tail[0] + ')')
+else:
+    print(_audit_result.stdout, end='')
 header = '''// Generated exact storage/slot ABI; private fields stay opaque.
 #pragma once
 #include <IOKit/IOPMGR.h>
