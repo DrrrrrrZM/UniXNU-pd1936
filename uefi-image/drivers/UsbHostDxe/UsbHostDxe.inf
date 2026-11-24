@@ -1,0 +1,37 @@
+## @file
+#  Force the SM8150 dwc3 controller into host mode and publish its MMIO window as a
+#  non-discoverable XHCI device, so the stock XHCI/mass-storage stack can bind.
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = UsbHostDxe
+  FILE_GUID                      = 3C7A9F24-6D81-4B5E-9C0A-2E4D81B7F35C
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = UsbHostDxeEntry
+
+[Sources]
+  UsbHostDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  IoLib
+  NonDiscoverableDeviceRegistrationLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+
+[Depex]
+  TRUE
+
+[Protocols]
+  gEfiPciIoProtocolGuid
