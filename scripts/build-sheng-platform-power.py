@@ -15,6 +15,28 @@ from native_prelink import macho, backed_offset, exports
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kernel_target import DEPLOYMENT, TRIPLE
 
+import shutil
+
+
+def _seed_candidate() -> None:
+    """The audit reads a candidate macho; seed it from the pinned kernel once."""
+    target = ROOT / 'build/xnu-prelink/native-owner-ufs-rootauth3-candidate.macho'
+    if target.exists():
+        return
+    for candidate in (ROOT / 'build/xnu/kernel.macho',
+                      ROOT / 'build/kernel/kernel.macho',
+                      ROOT / 'build/xnu/ios-sym/kernel.macho'):
+        if candidate.exists():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(candidate, target)
+            print('  seeded reference candidate from ' + str(candidate))
+            return
+    print('  warning: no kernel.macho found to seed the candidate')
+
+
+_seed_candidate()
+
+
 
 def run(command, **kwargs):
     return subprocess.check_output([str(v) for v in command], timeout=90, **kwargs)
