@@ -53,8 +53,10 @@ def base_command(record: dict) -> list[str]:
             index += 2
         elif value in ("-MD", "-MP"):
             index += 1
-        elif value.startswith("-W"):
+        elif value.startswith(("-W", "-mlinker-version=", "-Wl,", "-fuse-ld=")):
             index += 1
+        elif value in ("-Xlinker", "-Xclang"):
+            index += 2
         else:
             command.append(value)
             index += 1
