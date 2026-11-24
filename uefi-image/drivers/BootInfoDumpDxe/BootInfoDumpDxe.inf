@@ -1,0 +1,30 @@
+﻿## @file
+#  Scan the ABL's RAM log areas for printable strings.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = BootInfoDumpDxe
+  FILE_GUID                      = 4C8E71B2-95DA-4F36-B0E7-28C1A5D93F64
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = BootInfoDumpDxeEntry
+
+[Sources]
+  BootInfoDumpDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+
+[Depex]
+  TRUE
