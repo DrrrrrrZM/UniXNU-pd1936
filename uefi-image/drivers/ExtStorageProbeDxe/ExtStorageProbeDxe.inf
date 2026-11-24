@@ -1,0 +1,36 @@
+## @file
+#  Verify external storage: XHCI host state, port changes, and what the media actually holds.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = ExtStorageProbeDxe
+  FILE_GUID                      = 3C7D91A4-5B2E-4F68-9A17-6E04C8B2D351
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = ExtStorageProbeDxeEntry
+
+[Sources]
+  ExtStorageProbeDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  IoLib
+  MemoryAllocationLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+
+[Protocols]
+  gEfiPciIoProtocolGuid
+  gEfiBlockIoProtocolGuid
+
+[Depex]
+  TRUE
