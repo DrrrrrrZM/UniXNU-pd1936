@@ -22,7 +22,16 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RECIPE = ROOT / "build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/iokit/DEVELOPMENT/IOPlatformExpert.cpo.json"
-SOURCE = ROOT / "drivers/ShengUfs"
+def _default_source() -> Path:
+    """Prefer the tree copy; fall back to the fetched feed, which survives without the component."""
+    tree_copy = ROOT / "drivers/ShengUfs"
+    if tree_copy.is_dir():
+        return tree_copy
+    candidates = sorted((ROOT.parents[3] / "feeds").glob("ShengUfs-*"))
+    return candidates[-1] if candidates else tree_copy
+
+
+SOURCE = _default_source()
 
 
 def fail(message: str) -> "None":
