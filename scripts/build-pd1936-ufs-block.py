@@ -149,6 +149,19 @@ def main() -> int:
             fail(src.name + " did not compile")
         objects.append(obj)
 
+    # Fold the absolute bindings for IOBlockStorageDevice into this archive: it is the one guaranteed to
+    # be on the link line, whereas a separate archive is not referenced by anything and stays unreferenced.
+    bindings_dir = ROOT / "build/io-storage-family"
+    bindings_obj = bindings_dir / "original-bindings.o"
+    if not bindings_obj.is_file():
+        subprocess.run([sys.executable, str(ROOT / "scripts/build-storage-bindings.py")],
+                       cwd=ROOT, capture_output=True, text=True)
+    if bindings_obj.is_file():
+        objects.append(bindings_obj)
+        print("  including storage bindings object")
+    else:
+        print("  warning: storage bindings object not available")
+
     archive = args.out / "libShengUfs.a"
     archive.unlink(missing_ok=True)
     subprocess.run(["xcrun", "ar", "rcs", str(archive)] + [str(o) for o in objects], check=True)
