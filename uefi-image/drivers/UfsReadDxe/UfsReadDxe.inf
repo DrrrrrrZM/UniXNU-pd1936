@@ -1,0 +1,37 @@
+## @file
+#  Read LUN 0 LBA 0 over the UFS controller the ABL left enabled, and print it.
+#
+#  Bring-up step G1 for PD1936: proves the storage read path before a BlockIo driver is
+#  written. No PHY, clock or HCI reset is performed (the controller is already running).
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = UfsReadDxe
+  FILE_GUID                      = 7B1E4D62-5C3A-4F0B-9E27-1A6D3C9F2B54
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = UfsReadDxeEntry
+
+[Sources]
+  UfsReadDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  CacheMaintenanceLib
+  DebugLib
+  IoLib
+  MemoryAllocationLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+
+[Depex]
+  TRUE
