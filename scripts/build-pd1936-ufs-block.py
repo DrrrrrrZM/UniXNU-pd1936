@@ -24,6 +24,9 @@ ROOT = Path(__file__).resolve().parents[1]
 RECIPE = ROOT / "build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/iokit/DEVELOPMENT/IOPlatformExpert.cpo.json"
 def _default_source() -> Path:
     """Prefer the tree copy; fall back to the fetched feed, which survives without the component."""
+    component_copy = ROOT / "build/sheng-ufs/source"
+    if component_copy.is_dir():
+        return component_copy
     tree_copy = ROOT / "drivers/ShengUfs"
     if tree_copy.is_dir():
         return tree_copy
@@ -87,6 +90,8 @@ def main() -> int:
         fail("no .cpp sources under " + str(staged))
 
     include = ["-I", str(staged),
+               "-I", str(ROOT / "build/sheng-ufs"),
+               "-I", str(ROOT / "build/sheng-ufs/source"),
                "-I", str(ROOT / "build/storage-abi/include"),
                "-I", str(ROOT / "drivers/VirtioMmioBlock"),
                "-I", str(ROOT / ".cache/xnu-work/osfmk")]
