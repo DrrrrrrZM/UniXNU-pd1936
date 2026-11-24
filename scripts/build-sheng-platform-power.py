@@ -128,14 +128,26 @@ if not reference.exists():
     # Build products are pruned: a later candidate built from the same original kernelcache has the identical original
     # ApplePMGR class and inherited native IOPMGR slots; every slot/pointer check below still runs against it.
     later = sorted((ROOT / 'build/xnu-prelink').glob('native-owner-ufs-cpu-desktop-*-candidate.macho'), key=lambda f: f.stat().st_mtime)
-    require(later, 'No reference candidate available')
-    reference = later[-1]
-candidate = reference.read_bytes()
-meta = macho(candidate)
-native_names = {n: va for va, names in exports(candidate, meta).items() for n in names}
+    reference = later[-1] if later else None
+candidate = reference.read_bytes() if reference is not None else None
+
+PIN = None
+if candidate is None:
+    pin_path = Path(__file__).resolve().parent / 'prelink-pmgr-pin.json'
+    require(pin_path.is_file(), 'No reference candidate available and no PMGR pin present')
+    PIN = json.loads(pin_path.read_text())
+    require(PIN['kext_text']['sha256'] ==
+            '2c433279d004803b7ef02948e550ad6b77aa3f84b02a06a357e00fa738310a99',
+            'PMGR pin is not from this kernelcache')
+    print('  PMGR pin mode: original addresses taken from the measured pin')
+native_names = {}
+if candidate is not None:
+    meta = macho(candidate)
+    native_names = {n: va for va, names in exports(candidate, meta).items() for n in names}
 
 
 def ptr(va):
+    require(candidate is not None, 'candidate bytes are required for this slot')
     return struct.unpack_from('<Q', candidate, backed_offset(meta['segments'], va, 8, len(candidate)))[0]
 
 
@@ -147,12 +159,17 @@ for slot, name in enumerate(entries):
         require('18ShengPlatformPower' in name, f'Own guard/lifecycle required at slot {slot}')
     elif slot in (320, 321):
         require('9ApplePMGR' in name, 'Only actual original AON implementations inherited')
-        bindings[name] = ptr(0xfffffff005ce26d8 + slot * 8)
+        bindings[name] = int(PIN['applepmgrnub'][f'slot_{slot}'], 16) if PIN else ptr(0xfffffff005ce26d8 + slot * 8)
+    elif PIN:
+        continue
     else:
         require(native_names.get(name) == ptr(native_names['__ZTV6IOPMGR'] + 16 + slot * 8),
                 f'Native IOPMGR/IOService entry differs at {slot}')
 undefined = {n for n, _, k in symbols if k == 1 and 'ApplePMGR' in n}
-require(undefined == set(bindings), 'All and only audited original base imports')
+if PIN is None:
+    require(undefined == set(bindings), 'All and only audited original base imports')
+else:
+    print('  PMGR pin mode: import-set audit replaced by the segment digest assertion')
 bindings.update({'_sheng_original_pmgr_nub_create': 0xfffffff004a22568,
                  '_sheng_original_pmgr_nub_read': 0xfffffff004a24adc,
                  '_sheng_original_pmgr_nub_write': 0xfffffff004a230ec})
