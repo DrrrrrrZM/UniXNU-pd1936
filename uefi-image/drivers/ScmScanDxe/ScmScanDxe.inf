@@ -1,0 +1,30 @@
+﻿## @file
+#  Enumerate available SCM calls (IS_CALL_AVAIL matrix). Read-only, no side effects.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = ScmScanDxe
+  FILE_GUID                      = 2D6E9B38-71CA-4F04-8D5B-9A3C7E10B462
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = ScmScanDxeEntry
+
+[Sources]
+  ScmScanDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+
+[Depex]
+  TRUE
