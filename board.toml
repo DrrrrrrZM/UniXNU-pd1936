@@ -60,7 +60,6 @@ archives = [
   # LUNs and read blocks, so it is enough to reach the root volume; it cannot write.
   "component:ShengUfs",
   "build-pd1936-ufs-block.py",
-  "build-sheng-platform-power.py",
   "component:VirtioMmioBlock",
   "component:RamBlock",
   "build-storage-bindings.py",
@@ -132,7 +131,6 @@ kernel_args = [
   "amfi_get_out_of_my_way=1",
   "pd1936-autoreset=600",
   "native-ufs-root=1",
-    "sheng-pmgr=2",
   "boot-progress=2",
   "build-tag=pd1936-02",
   "kextlog=0xfff",
