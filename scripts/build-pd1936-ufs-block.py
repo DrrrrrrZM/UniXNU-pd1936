@@ -103,7 +103,11 @@ def main() -> int:
         result = subprocess.run(command, cwd=record["directory"], capture_output=True, text=True)
         (args.out / (src.stem + ".log")).write_text((result.stdout or "") + (result.stderr or ""))
         if result.returncode:
-            sys.stderr.write(((result.stdout or "") + (result.stderr or ""))[-3000:])
+            text = (result.stdout or "") + (result.stderr or "")
+            errors = [ln for ln in text.splitlines() if "error:" in ln or "fatal error:" in ln]
+            sys.stderr.write("\n".join(errors[:20]) + "\n")
+            if not errors:
+                sys.stderr.write(text[-2000:] + "\n")
             fail(src.name + " did not compile")
         objects.append(obj)
 
