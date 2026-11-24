@@ -1,0 +1,33 @@
+## @file
+#  Report the GOP mode info and sample scanout pixels.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = GopInfoDxe
+  FILE_GUID                      = 3F6A18D2-7C95-4B04-9E13-48D5A2C67B10
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = GopInfoDxeEntry
+
+[Sources]
+  GopInfoDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+
+[Protocols]
+  gEfiGraphicsOutputProtocolGuid
+
+[Depex]
+  gEfiGraphicsOutputProtocolGuid
