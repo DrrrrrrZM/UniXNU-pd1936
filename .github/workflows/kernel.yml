@@ -107,18 +107,27 @@ jobs:
 
       - name: build an APFS seed containing /sbin/launchd
         run: |
+          set -x
           rm -rf /tmp/root /tmp/seed.dmg device/seed-root.img
           mkdir -p /tmp/root/sbin
           cp /tmp/launchd /tmp/root/sbin/launchd
           chmod 755 /tmp/root/sbin/launchd
           ls -l /tmp/root/sbin
-          # -srcfolder lets hdiutil write the tree into the volume; -format UDRW keeps the
-          # result a raw disk image, which is what the kernel's RAM disk driver expects.
+          # Keep this minimal: hdiutil -srcfolder writes a complete APFS volume
+          # (NXSB + APSB both present). Attempts to rebuild the container with
+          # diskutil (deleteContainer + apfs create) failed halfway on this runner
+          # and left an empty GPT-only image - that is what broke the seeds after #99.
+          # apfs_role is set afterwards by the local Fletcher64 patch, not here.
           hdiutil create -size 128m -fs APFS -volname PD1936ROOT \
               -srcfolder /tmp/root -format UDRW /tmp/seed
           ls -l /tmp/seed.dmg
           cp /tmp/seed.dmg device/seed-root.img
           ls -l device/seed-root.img
+          # record whether the volume image really carries APFS structures
+          echo "--- seed signature check ---"
+          xxd -l 16 -s 0x200 device/seed-root.img || true
+          strings -a device/seed-root.img | grep -c NXSB || true
+          strings -a device/seed-root.img | grep -c APSB || true
 
       - name: build kernel, payload, firmware
         env:
@@ -134,6 +143,44 @@ jobs:
           python3 UniXNU/unixnu build kernel -D device --os "${{ inputs.os }}"
           python3 UniXNU/unixnu build payload -D device --os "${{ inputs.os }}" --data-ramdisk device/seed-root.img
           python3 UniXNU/unixnu build firmware -D device --os "${{ inputs.os }}" --uefi uefi-pd1936
+
+      - name: inspect the UFS archive
+        if: always()
+        run: |
+          TREE=$(ls -d UniXNU/out/pd1936/*/*/tree 2>/dev/null | head -1)
+          echo "tree: $TREE"
+          echo "--- transform scripts that reached the tree ---"
+          ls -l "$TREE"/scripts/build-pd1936-ufs* 2>/dev/null || echo "none"
+          for f in "$TREE"/scripts/build-pd1936-ufs*; do
+            [ -f "$f" ] || continue
+            echo "$(basename "$f"): g86=$(grep -c g86 "$f" || true) acr=$(grep -c 'acr=%x' "$f" || true) smr92=$(grep -c smr92 "$f" || true) bytes=$(wc -c < "$f")"
+          done
+          echo "--- archive it produced ---"
+          A="$TREE/build/sheng-ufs/libShengUfs.a"
+          ls -l "$A" 2>/dev/null || echo "no archive"
+          if [ -f "$A" ]; then
+            echo "g86_in_archive=$(strings -a "$A" | grep -c 'NATIVE_UFS g86' || true)"
+            echo "smr92_in_archive=$(strings -a "$A" | grep -c smr92 || true)"
+            echo "acr_in_archive=$(strings -a "$A" | grep -c 'acr=%x' || true)"
+          fi
+          echo "--- RamBlock archive (archive-13 output) ---"
+          RB="$TREE/build/ram-block/libRamBlock.a"
+          ls -l "$RB" 2>/dev/null || echo "no ram block archive"
+          if [ -f "$RB" ]; then
+            echo "Apple_APFS_in_ramblock=$(strings -a "$RB" | grep -c Apple_APFS || true)"
+            echo "ramblock_objs=$(ar t "$RB" | tr '\n' ' ')"
+            echo "ramblock_o_mtime=$(ls -l --time-style=+%H:%M:%S "$TREE"/build/ram-block/*.o 2>/dev/null | awk '{print $6, $7}' | tr '\n' ' ')"
+          fi
+          echo "--- ramblock source transform check ---"
+          SRC=$(ls -d "$TREE"/build/ram-block/source 2>/dev/null | head -1)
+          if [ -n "$SRC" ] && [ -f "$SRC/NativeRamBlock.cpp" ]; then
+            echo "Apple_APFS_in_source=$(grep -c Apple_APFS "$SRC/NativeRamBlock.cpp" || true)"
+            grep -n -A2 'AppleAPFSContainer::probe gates' "$SRC/NativeRamBlock.cpp" | head -6 || true
+          else
+            echo "no staged ramblock source"
+          fi
+          echo "--- legacy alias ---"
+          ls -l "$TREE/build/native-ufs/" 2>/dev/null || echo "no legacy dir"
 
       - name: show failure tail
         if: failure()

@@ -59,9 +59,12 @@ archives = [
   # PHY 0x1d87000, GCC 0x100000 + 0x77000, SMMU stream 0x300). It can enumerate the
   # LUNs and read blocks, so it is enough to reach the root volume; it cannot write.
   "component:ShengUfs",
-  "build-pd1936-ufs-block.py",
+  "build-pd1936-ufs-v5.py",
   "component:VirtioMmioBlock",
   "component:RamBlock",
+  # After the component build: republishes Content = Apple_APFS on md0 so
+  # AppleAPFSContainer::probe passes its isFormatted() gate.
+  "build-pd1936-ramblock.py",
   "build-storage-bindings.py",
   # Still to write:
   #   "build-pd1936-armcpu.py"        (ArmCpu source transform, see UniXNU-nabu)
@@ -133,6 +136,15 @@ kernel_args = [
   "boot-progress=2",
   "build-tag=pd1936-02",
   "kextlog=0xfff",
+  # The kernel now gets past the SMMU stage (no smmu panic) and stalls at
+  # "Waiting on <IOMedia, ...>": nothing publishes a root media. This is the same
+  # wall recorded in docs/handover-2026-11-20.md:11, where the answer was rd=md0 -
+  # RamBlock publishes md0 from the data ramdisk and the kernel takes it as BSD root
+  # instead of waiting for a disk (handover-2026-11-21.md:19 shows BSD root: md0).
+  "rd=md0",
+  # Root mode instead of the probe=10 diagnostic, so the block devices are actually
+  # published rather than panicking on purpose.
+  "native-ufs-root=1",
 ]
 
 [payload.adt]
@@ -152,6 +164,17 @@ unixnu = "../UniXNU"
 
 [package.defconfig]
 "ipados-17.7.11-21H461" = "pd1936_defconfig"
+
+# No ApplePMGR can exist on this SoC, and the sheng stand-in is what kept the board
+# from booting in #69. Declaring vmm-present is the supported alternative: AMFI then
+# reports "Booted in a VM" and never waits for an ApplePMGRNub (without it the
+# unchanged AMFI panics with "No PMGR" at ConfigurationSettings.cpp), and
+# payload.py's native-ufs-root gate is skipped for the same reason, so no
+# sheng-pmgr argument and no _sheng_pmgr_run symbol are needed.
+# Side effect to remember: MobileGestalt answers IsVirtualDevice from here on.
+[adt.defaults.u32]
+vmm-present = 1
+sleep-disabled = 1
 
 # PM8150 PON keys (measured: qpnp_pon exposes KEY_POWER only; gpio-keys carries
 # the volume keys). Volume key GPIOs are still to be read from the stock DT.

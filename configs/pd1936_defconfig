@@ -1,6 +1,10 @@
 CONFIG_XNU_ARM_DT_PLATFORM=y
 CONFIG_XNU_ARMCPU=y
 CONFIG_XNU_NATIVE_UFS=y
+# RAM-backed disk for the seed: without this the build script skips the whole
+# RamBlock link block (build-xnu-4k-baseline.sh:733), so md0 comes from the UFS
+# window instead and the payload seed is never read.
+CONFIG_XNU_NATIVE_RAM_BLOCK=y
 CONFIG_XNU_NATIVE_CS_HASH_CACHE=y
 CONFIG_XNU_BUILD_ARCHIVES=y
 # CONFIG_XNU_NATIVE_LEGACY_DISPLAY is not set   # needs ; no display component selected
@@ -18,5 +22,18 @@ CONFIG_XNU_PSMI_SMC=y
 # CONFIG_XNU_NATIVE_VIRTIO_BLOCK is not set
 # mockfs is not needed for the UFS bring-up
 CONFIG_XNU_SOURCE_MOCKFS=n
-CONFIG_XNU_SHENG_PMGR=y
 CONFIG_XNU_SOURCE_CORECRYPTO14=y
+# Bisect step A (no PMGR): the recipe build-sheng-platform-power.py is not in
+# [kernel] archives and sheng-platform-power.patch is not in the series, so
+# leaving this on makes build-xnu-4k-baseline.sh exit 1 at its bare
+#   test -f build/sheng-platform-power/libShengPlatformPower.a
+# (line 784, under `set -euo pipefail`; the message only goes to stderr, which is
+# why the CI log shows "bash failed (1)" with no command). Re-enable together
+# with the archive recipe, the patch and the pmgr=2 boot argument.
+# CONFIG_XNU_SHENG_PMGR is not set
+# Storage bindings need no separate archive: build-pd1936-ufs-block.py folds
+# build/io-storage-family/original-bindings.o into libShengUfs.a, which is the
+# archive guaranteed to sit on the link line (its comment says so explicitly).
+# Force-loading a second archive that defines the same `.set` aliases breaks the
+# link with "duplicate symbol 'IOBlockStorageDevice::getMetaClass() const'"
+# (measured on run #72), so no CONFIG_XNU_EXTRA_LD_ARCHIVES here.
